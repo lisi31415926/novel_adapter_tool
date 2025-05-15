@@ -1,0 +1,512 @@
+AI小说改编工具 - 项目回顾与后续计划 (截至2025-05-12)
+一、 工具核心设计理念与目标回顾
+核心目标： 构建一个AI辅助的强大工具，用于对长篇中文小说进行深度分析、洞察提取，并能根据用户的多样化需求和预设的、可自定义的规则链进行文本改编、内容生成和风格转换。
+
+设计理念：
+
+模块化 (Modularity): 各功能模块高度解耦，便于独立开发、测试、升级和维护。
+
+可扩展性 (Scalability): 易于集成新的大型语言模型 (LLM)、分析算法或复杂的改编规则。
+
+数据驱动 (Data-Driven): 所有改编和分析操作都基于对小说文本的深度理解和结构化数据。
+
+人机协作 (Human-AI Collaboration): AI作为强大的创作和分析助手，用户拥有最终的创意控制权，强调交互式编辑和迭代优化。
+
+服务化 (Service-Oriented - Backend): 后端功能通过清晰的API提供服务，便于前端或其他客户端调用。
+
+二、 工具整体架构与模块现状
+我们当前的系统架构主要分为前端UI层、后端API网关、核心后端模块以及数据存储层。
+
+graph TD
+    A[用户界面 (UI Layer - React)] <--> B[后端API网关 (Backend API - FastAPI)]
+
+    B --> C[项目与数据管理模块 (初步实现: 小说CRUD, 规则链CRUD)]
+    B --> D[小说解析与结构化引擎 (实现: TXT/EPUB解析, 章节切分)]
+    B --> E[深度分析与洞察模块 (实现: 章节情感/实体/主题, 全文摘要/角色/关键词, 前端情感图表)]
+    B --> F[改编规则与约束引擎 (实现: 规则链定义/存储/执行API, 前端列表/编辑器/执行UI)]
+    B --> G[智能提示工程与编排模块 (已集成于LLM服务和规则链执行逻辑中)]
+    B --> H[大型语言模型(LLM)集成与抽象层 (实现: OpenAI API调用封装)]
+    B --> I[内容生成与后处理模块 (LLM生成, 已实现简单后处理规则应用)]
+    B --> J[评估与反馈模块 (尚未开始)]
+    B --> K[学习与个性化引擎 (尚未开始)]
+
+    D --> L[结构化小说数据库 (SQLite - Novel, Chapter, NamedEntity)]
+    E --> L
+    C --> M[项目元数据库 (SQLite - RuleChain, RuleStep)]
+    F --> M
+    C --> N[原始与处理后文件存储 (本地临时存储)]
+    
+    H --> O[外部LLM服务 (OpenAI API)]
+    I --> L
+    
+    subgraph "数据存储层 (Data Storage Layer - SQLite)"
+        L["小说内容库 (Novel, Chapter, NamedEntity 表)"]
+        M["规则与项目库 (RuleChain, RuleStep 表)"]
+        N["文件存储 (目前为本地)"]
+        P[向量数据库 (Vector DB - 规划中, 未实现)]
+    end
+    
+    D --> P
+    G --> P
+
+三、 已选择的主要工具与模型
+前端框架： React (使用 Vite + TypeScript)
+
+前端路由： react-router-dom
+
+前端拖拽库： react-beautiful-dnd (用于规则链步骤排序)
+
+前端图表库： recharts (用于情感曲线图)
+
+前端样式管理： CSS Modules (正在逐步推广) + 全局CSS变量 (global.css)
+
+后端框架： Python FastAPI
+
+数据库ORM (后端)： SQLAlchemy
+
+数据库 (后端)： SQLite (用于当前开发阶段)
+
+大型语言模型 (LLM)： OpenAI API (例如 gpt-3.5-turbo)
+
+本地NLP工具 (Python)：
+
+spaCy (及中文模型 zh_core_web_sm): 用于命名实体识别 (NER)。
+
+jieba: 用于中文分词和关键词提取。
+
+snownlp: 用于中文情感分析。
+
+EPUB解析库 (Python)： EbookLib 和 BeautifulSoup4
+
+四、 代码目录结构回顾
+我们遵循了您之前提供并逐步完善的目录结构，前端 frontend-react 和后端 backend 分离。
+
+frontend-react/src/:
+
+App.tsx, main.tsx, index.html (入口与布局)
+
+styles/global.css (全局样式与CSS变量)
+
+components/: 包含所有React组件及其对应的 .module.css 文件。
+
+NovelUploader.tsx, NovelsList.tsx, NovelOverview.tsx, ChapterList.tsx, ChapterProcessor.tsx
+
+TaskSpecificParamsInput.tsx, LLMResultDisplay.tsx, ChainExecutionResultDisplay.tsx
+
+RuleChainList.tsx, RuleChainEditor.tsx
+
+SentimentChart.tsx
+
+对应的 .module.css 文件（大部分已创建并应用）
+
+services/api.ts: 封装所有后端API调用。
+
+backend/app/:
+
+main.py (FastAPI应用与路由)
+
+models.py (SQLAlchemy模型)
+
+schemas.py (Pydantic模型)
+
+crud.py (数据库操作)
+
+database.py (数据库配置)
+
+llm_service.py (LLM调用逻辑)
+
+local_nlp_service.py (本地NLP处理)
+
+novel_parser_service.py (小说文件解析)
+
+rule_application_service.py (后处理规则应用)
+
+novel_adapter.db (SQLite数据库文件)
+
+五、 已完成/实现的功能和对应代码 (截至当前)
+A. 后端 (FastAPI - Python) - 所有相关文件您已上传，此处不再重复代码
+
+数据库与模型 (models.py, schemas.py, crud.py, database.py):
+
+Novel, Chapter, NamedEntity, RuleChain, RuleStep 模型定义完成。
+
+对应的Pydantic schemas 用于API数据校验和序列化，包括规则链相关模型。
+
+所有模型的CRUD操作基本实现。
+
+SQLite数据库初始化和会话管理。
+
+小说解析 (novel_parser_service.py):
+
+支持 .txt 和 .epub 文件解析，提取章节标题和内容。
+
+本地NLP分析 (local_nlp_service.py):
+
+章节级情感分析 (snownlp)。
+
+章节级命名实体识别 (spaCy - 文本、标签、起止位置)。
+
+全文关键词提取 (jieba)。
+
+全文人名预提取 (spaCy)。
+
+LLM服务与任务 (llm_service.py):
+
+封装OpenAI API调用。
+
+支持多种预定义任务 (PredefinedTaskEnum)，包括：总结、提取角色（带描述）、识别事件、自定义指令、视角转换、文本精简、对话提取、多种语气转换、简单解释文本、生成后续情节、分析章节主题。
+
+支持在LLM输出后应用简单的后处理规则。
+
+后处理规则 (rule_application_service.py):
+
+实现“移除多余空格”和“句子首字母大写”规则。
+
+核心API端点 (main.py):
+
+/api/v1/process_text: 通用文本处理端点，支持所有预定义任务、自定义指令、任务特定参数和后处理规则。
+
+/api/v1/upload_novel: 支持TXT/EPUB上传，自动完成章节解析、章节级分析（情感、实体、主题）入库，以及全文级分析（摘要、LLM角色、关键词）入库。
+
+小说查询API: 返回小说和章节信息，包含所有已分析的洞察数据。
+
+小说删除API。
+
+规则链CRUD API: 实现规则链（含步骤及其参数）的创建、读取、更新、删除。
+
+规则链执行API (/api/v1/rule-chains/execute): 实现接收规则链ID或定义及源文本，按顺序执行步骤，并返回最终结果和各步骤详情。
+
+B. 前端 (React + Vite + TypeScript) - 相关组件代码在您之前的Canvas中
+
+项目基础与样式 (main.tsx, index.html, src/styles/global.css):
+
+React项目入口和HTML骨架。
+
+全局CSS文件，定义了CSS变量和基础通用样式。
+
+API服务 (src/services/api.ts):
+
+为所有已实现的后端API端点创建了类型安全的调用函数，包括规则链相关API。
+
+主应用组件与路由 (src/App.tsx, src/App.module.css):
+
+使用 react-router-dom 实现多视图导航（小说管理、改编规则引擎、规则链编辑器）。
+
+MainLayout 组件提供统一的页头（含导航）、内容区和页脚。
+
+App.module.css 应用于主布局。
+
+核心功能组件 (src/components/):
+
+NovelUploader.tsx: 支持TXT/EPUB文件上传。
+
+NovelsList.tsx: 展示小说列表，支持分页和删除。列表项显示概览信息。
+
+NovelOverview.tsx: 展示选定小说的概览（摘要、LLM角色、本地关键词）和章节情感曲线图 (使用 SentimentChart.tsx)。已应用CSS Modules。
+
+ChapterList.tsx: 展示选定小说的章节列表，包含章节标题、情感得分和主题预览。已应用CSS Modules。
+
+SentimentChart.tsx: 使用 recharts 显示章节情感曲线图。已应用CSS Modules。
+
+ChapterProcessor.tsx:
+
+显示选定章节的洞察信息（情感、本地NER实体、LLM分析的主题）和原文。
+
+提供任务下拉菜单，支持所有后端定义的LLM处理任务。
+
+使用 TaskSpecificParamsInput.tsx 动态显示任务特定参数。
+
+提供通用指令输入和后处理规则选择。
+
+集成规则链执行功能： 允许用户选择已保存的规则链，选择输入源（当前章节或手动输入），并对文本执行规则链。
+
+使用 LLMResultDisplay.tsx 显示单个任务的处理结果。
+
+使用 ChainExecutionResultDisplay.tsx 显示规则链执行的详细结果。
+
+已应用CSS Modules。
+
+TaskSpecificParamsInput.tsx: 根据任务类型动态渲染参数输入UI。已应用CSS Modules。
+
+LLMResultDisplay.tsx: 结构化展示LLM的各种输出。已应用CSS Modules。
+
+ChainExecutionResultDisplay.tsx: 结构化展示规则链执行的多步骤结果。已应用CSS Modules。
+
+RuleChainList.tsx: 展示已保存的规则链列表，支持删除和导航到编辑器。已应用CSS Modules。
+
+RuleChainEditor.tsx:
+
+支持创建和编辑规则链的名称与描述。
+
+支持添加和移除规则步骤（显示任务类型和顺序）。
+
+支持为每个选中的步骤配置其特定参数（复用 TaskSpecificParamsInput）、通用指令和后处理规则。
+
+支持步骤的拖拽排序 (react-beautiful-dnd)。
+
+调用API保存包含完整参数的规则链。
+
+已应用CSS Modules。
+
+六、 后续执行计划建议
+根据我们“加快效率，同时增加核心功能并优化前端”的原则，以及当前已完成的坚实基础，我建议下一步的重点是：
+
+阶段目标：全面提升“改编规则引擎”的易用性和功能完整性，并完成核心组件的样式系统化。
+
+前端 - RuleChainEditor.tsx 最终打磨与交互优化 (高优先级):
+
+步骤参数配置的视觉反馈与用户体验：
+
+当选中一个步骤时，参数配置区（TaskSpecificParamsInput、通用指令、后处理规则）的展开/折叠可以做得更平滑（例如，使用简单的CSS过渡或React动画库如 Framer Motion 的基础功能）。
+
+考虑当没有步骤被选中时，参数配置区是否应该完全隐藏或显示一个“请选择一个步骤进行配置”的提示。
+
+步骤列表项UI增强：
+
+确保拖拽手柄 (DragHandleIcon)、步骤信息和删除按钮 (DeleteIcon) 在视觉上清晰且易于交互。
+
+考虑为步骤项添加一个小的“展开/折叠参数”图标按钮（替代或补充点击整个列表项来选中并显示参数区的行为），以提供更明确的交互。
+
+错误处理与用户反馈：
+
+在保存规则链时，如果参数校验失败（例如，必填参数未填写），除了显示错误消息外，还应自动高亮或滚动到第一个有问题的步骤。
+
+使用更友好的Toast通知（例如，使用 react-toastify 库）替代简单的 alert 来显示成功或错误消息。
+
+CSS Modules彻底应用： 对 RuleChainEditor.tsx 进行最后一次样式审查，确保所有元素都通过其CSS Module (RuleChainEditor.module.css) 或全局样式控制，移除所有遗留的内联样式。
+
+前端 - 核心组件样式收尾：
+
+NovelUploader.tsx 和 App.tsx (页面级组件如 NovelsPage, NovelDetailPage, RuleChainsPage)： 为这些组件创建或完善其CSS Modules，确保它们也完全遵循模块化和全局变量的样式策略。
+
+全局样式 (global.css) 审查： 检查是否有可以进一步提取到 global.css 的通用样式或CSS变量。
+
+后端 - 规则链执行健壮性与灵活性增强 (可选，根据时间)：
+
+参数传递与类型安全： 在 main.py 的 execute_adaptation_rule_chain 中，当从 step.parameters_json 或 step_data.parameters 构造传递给 call_llm_api 的参数时，进行更严格的类型检查和转换，以防止因参数类型错误导致的运行时问题。
+
+步骤输入源 (input_source) 的初步支持： 虽然我们之前在 RuleStep 模型中注释掉了 input_source，但可以开始考虑如何在执行时处理“上一步输出”与“原始文本”作为步骤输入的切换。初步可以先默认所有步骤都处理“上一步的输出”（第一个步骤处理“原始输入”）。
+
+为什么选择这个方向？
+
+用户价值： 一个功能完善且易于使用的规则链编辑器是“改编规则引擎”的核心，直接影响用户能否高效地创建和管理复杂的改编任务。
+
+代码质量： 完成核心组件的样式系统化，将使整个前端项目更加健壮和易于维护。
+
+承上启下： 一个好用的规则链编辑器和执行器，是后续实现更高级改编功能（如“F. 改编规则与约束引擎”中的“多维度约束条件设置”、“改编规划器”）和“I. 内容生成与后处理模块”（例如，基于规则链生成完整改编文本）的前提。
+
+这个计划首先集中精力将“改编规则引擎”的前端编辑体验打磨到非常好的程度，并完成前端样式的整体规范化。然后，可以根据需要再回到后端进行更细致的优化。
+
+您觉得这个计划如何？
+
+
+小说改编工具进度回顾 (截至 2025-05-13)
+根据项目大纲 (大纲.txt) 以及我们最近的开发迭代，以下是对工具当前完成情况的评估。
+
+一、 核心设计理念与目标回顾
+
+核心目标：AI 辅助小说深度分析、洞察提取、文本改编、内容生成和风格转换。
+
+进度：已实现核心分析（情感、实体、主题、关键词、摘要、角色）、LLM 文本处理（多种预定义任务）、规则链定义与执行、RAG 作为规则链步骤。内容生成和风格转换主要通过 LLM 任务和 RAG 实现。
+
+设计理念：
+
+模块化 (Modularity)：已实现。前后端分离，后端各服务（解析、NLP、LLM、向量、规则）相对独立。
+
+可扩展性 (Scalability)：部分实现。LLM 集成层已封装，便于未来更换或增加模型。规则链设计也考虑了扩展性。向量数据库的引入增强了此方面的能力。
+
+数据驱动 (Data-Driven)：已实现。操作基于文本分析和结构化数据（数据库模型、向量存储）。
+
+人机协作 (Human-AI Collaboration)：正在进行中。用户可以通过规则链、自定义指令、RAG 指令与 AI 协作。前端 UI 提供了交互界面。后续的“改编工作台”设想将进一步强化此理念。
+
+服务化 (Service-Oriented - Backend)：已实现。后端通过 FastAPI 提供 API 服务。
+
+二、 工具整体架构与模块现状 (对照大纲图)
+
+A[用户界面 (UI Layer - React)]: 大部分实现。核心页面和组件已创建，包括小说管理、规则链编辑器、章节处理器等。最近的 UI/UX 优化也在进行中。
+
+B[后端API网关 (Backend API - FastAPI)]: 已实现。提供了各模块功能的 API 接口。
+
+C[项目与数据管理模块]: 已实现。小说和规则链的 CRUD 操作已完成。
+
+D[小说解析与结构化引擎]: 已实现。支持 TXT/EPUB 解析和章节切分。
+
+E[深度分析与洞察模块]: 已实现。包括本地 NLP 分析（情感、实体、关键词、人名）和 LLM 分析（摘要、角色、主题）。前端有情感图表展示。
+
+F[改编规则与约束引擎]: 核心实现。规则链的定义、存储、前端编辑（包括步骤排序、参数配置、输入源选择）和后端执行逻辑已完成。RAG 作为规则链步骤是此模块的重大进展。大纲中更高级的“多维度约束条件设置”、“改编规划器”尚未开始。
+
+G[智能提示工程与编排模块]: 已集成。主要体现在 llm_service.py 中的提示模板、RAG 提示构建，以及规则链对 LLM 调用的编排。
+
+H[大型语言模型(LLM)集成与抽象层]: 已实现。封装了对 OpenAI API 的调用。
+
+I[内容生成与后处理模块]: 核心实现。LLM 生成是主要的内容生成方式，RAG 增强了生成质量。简单的后处理规则已实现并可应用于规则链步骤。
+
+J[评估与反馈模块]: 尚未开始。
+
+K[学习与个性化引擎]: 尚未开始。
+
+L[结构化小说数据库 (SQLite - Novel, Chapter, NamedEntity)]: 已实现。模型已定义并包含分析状态字段。
+
+M[项目元数据库 (SQLite - RuleChain, RuleStep)]: 已实现。
+
+N[原始与处理后文件存储 (本地临时存储)]: 已实现。目前使用本地 uploads 目录。
+
+O[外部LLM服务 (OpenAI API)]: 已集成。
+
+P[向量数据库 (Vector DB - ChromaDB)]: 已实现并集成。包括章节内容的分块、向量化存储、相似性搜索 API，以及在 RAG 和规则链中的应用。
+
+三、 已选择的主要工具与模型
+
+与大纲所列一致，均已在项目中使用。新增了 ChromaDB 和 sentence-transformers (通过 chromadb 的 embedding_functions)。
+
+四、 代码目录结构回顾
+
+与大纲所列一致，并根据新功能（如 vector_store_service.py）有所扩展。
+
+五、 已完成/实现的功能和对应代码 (对照大纲“五、A 后端”和“五、B 前端”)
+
+后端:
+
+数据库与模型:
+
+Novel 模型已添加 analysis_status 和 analysis_errors 字段。
+
+RuleStep 的 parameters 字段现在用于存储 RAG 步骤的特定参数。
+
+小说解析: 已完成。
+
+本地NLP分析: 已完成。
+
+LLM服务与任务:
+
+call_llm_api 已更新，支持接收 retrieved_context 以实现 RAG 功能，并可处理 RAG 步骤特定的 LLM 模型和温度参数。
+
+PredefinedTaskEnum 已添加 RAG_GENERATION。
+
+后处理规则: 已完成。
+
+核心API端点:
+
+/api/v1/upload_novel: 后台任务 run_novel_analysis 现在会更新 analysis_status 和 analysis_errors，并进行章节内容的向量化存储。
+
+/api/v1/novels/{novel_id}: 返回的 Novel 数据现在包含 analysis_status 和 analysis_errors。
+
+/api/v1/novels/{novel_id}/delete: 现在会同时清理向量数据库中对应小说的条目。
+
+/api/v1/rule-chains/execute: 请求体增加了 novel_id；执行逻辑已更新，可以处理 RAG_GENERATION 类型的步骤，包括从向量库检索上下文、构建 RAG 提示、并调用 LLM。在执行 RAG 步骤前会检查小说的 analysis_status 是否为 VECTORIZED。
+
+新增 /api/v1/novels/{novel_id}/search_similar API 用于相似性搜索。
+
+新增 /api/v1/novels/{novel_id}/generate_rag API 用于直接的 RAG 调用（非规则链）。
+
+前端:
+
+API服务 (api.ts):
+
+类型定义 (Novel, RuleStep, RuleChainExecuteRequest) 已更新，以匹配后端的 analysis_status, analysis_errors, RAG 参数和 novel_id。
+
+PredefinedTaskEnum 已添加 RAG_GENERATION。
+
+getPredefinedTasks 辅助函数已更新，为 RAG 任务提供友好标签。
+
+添加了调用新 RAG API (generateRAG) 和相似性搜索 API (searchSimilarChunksInNovel) 的函数。
+
+主应用组件与路由 (App.tsx): 已集成 react-toastify 用于全局通知。
+
+核心功能组件:
+
+NovelOverview.tsx:
+
+显示从后端获取的实际 analysis_status，并提供视觉指示器。
+
+如果存在 analysis_errors，则提供可展开/折叠的错误详情显示。
+
+相似性搜索功能会根据 analysis_status 启用/禁用。
+
+已集成 SimilaritySearchResultsDisplay.tsx，并将 novelId 传递给它。
+
+SimilaritySearchResultsDisplay.tsx:
+
+实现了关键词高亮。
+
+实现了跳转到对应章节的功能。
+
+ChapterProcessor.tsx:
+
+在执行规则链时，会传递当前 novel_id 给 API。
+
+添加了直接调用 RAG 生成的 UI（指令输入、上下文数量选择、触发按钮）和结果显示区域。
+
+RAG 相关按钮会根据小说 analysis_status 启用/禁用。
+
+RuleChainEditor.tsx:
+
+任务类型下拉菜单中包含 "RAG 生成 (上下文检索)" 选项。
+
+RAG 步骤在列表中有视觉提示（大脑图标）。
+
+TaskSpecificParamsInput.tsx:
+
+当任务类型为 RAG_GENERATION 时，动态渲染 RAG 特定参数的输入字段（指令、上下文数量、可选查询、模型、温度）。
+
+为 RAG 参数的标签添加了更清晰的提示（范围、可选标记）。
+
+CSS Modules: 大部分核心组件已应用，UI/UX 优化在进行中。
+
+六、 后续执行计划建议 (对照大纲“六、后续执行计划建议”)
+
+大纲原计划 (截至 2025-05-12):
+
+前端 - RuleChainEditor.tsx 最终打磨与交互优化 (高优先级) -> 部分完成并持续优化中 (如 RAG 步骤视觉提示、参数输入优化)。
+
+前端 - 核心组件样式收尾 -> 正在进行中。
+
+后端 - 规则链执行健壮性与灵活性增强 (步骤输入源 input_source 的初步支持) -> 已实现 (input_source 已在模型、Schema 和规则链执行逻辑中支持)。
+
+当前进展:
+
+我们已经超越了原计划中对“步骤输入源”的初步支持，并完整实现了该功能。
+
+我们引入并集成了向量数据库 (ChromaDB)。
+
+我们实现了相似性搜索功能。
+
+我们实现了直接的 RAG API。
+
+最重要的是，我们按照“策略一”将 RAG 作为一种特殊的可配置步骤深度集成到了规则链的创建和执行流程中，并完成了相应的前后端修改和初步的 UI/UX 优化。
+
+我们实现了小说分析状态的跟踪和前端展示。
+
+我们引入了 Toast 通知。
+
+当前工具的核心功能已相当完备，特别是规则链引擎的灵活性和 RAG 的集成。
+
+后续可以考虑的重点 (结合大纲和当前进展):
+
+深度测试与错误处理 (高优先级): 对已实现的复杂功能（特别是包含 RAG 的规则链）进行全面测试，完善错误处理和日志记录。
+
+UI/UX 持续打磨:
+
+TaskSpecificParamsInput.tsx: 考虑是否需要更高级的输入组件（如滑块）或更细致的参数校验。
+
+结果展示：优化 LLMResultDisplay, ChainExecutionResultDisplay, RAG 结果和相似性搜索结果的交互性（例如，一键复制、发送到下一步操作等）。
+
+“改编工作台”或“草稿箱”概念 (策略二的探索):
+
+如之前讨论，可以开始构思并逐步实现一个简化的工作台，允许用户将不同步骤（包括 RAG）的输出发送到此处进行手动编辑和组合。这可以作为对自动化规则链流程的有力补充。
+
+后端 - 高级规则引擎功能 (大纲 F 部分的未完成项):
+
+“多维度约束条件设置”：例如，在生成文本时限制长度、避免某些词汇等。这可能需要在 llm_service 或规则链参数中加入新的约束类型。
+
+“改编规划器”：这是一个更长远的目标，可能涉及 AI 根据用户的高层目标自动推荐或组合规则链。
+
+后端 - 文件存储方案: 从本地临时存储迁移到更持久化的方案（如云存储），尤其当处理大量或大型小说时。
+
+评估与反馈模块 (大纲 J 部分): 开始设计用户如何评价改编效果，以及系统如何收集这些反馈。
+
+学习与个性化引擎 (大纲 K 部分): 基于用户操作和反馈，实现个性化推荐或模型微调（长远目标）。
+
+目前，我认为深度测试和继续打磨现有核心功能的 UI/UX 是最优先的。同时，可以开始初步设计“改编工作台”，思考其核心交互和数据流。
+
+这份回顾总结了我们取得的显著进展，并指明了未来的方向。
