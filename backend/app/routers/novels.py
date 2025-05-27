@@ -1,260 +1,284 @@
 # backend/app/routers/novels.py
 import logging
-from typing import List, Optional, Any
+from typing import Optional
+
 from fastapi import (
-    APIRouter, Depends, HTTPException, status, Query,
-    UploadFile, File, Form, BackgroundTasks, Path
+    APIRouter, Depends, HTTPException, status, File, UploadFile, Form, BackgroundTasks, Path, Query, Body
 )
-from pydantic import BaseModel
-
-# 导入异步会话类型
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
-# 导入 CRUD 操作、schemas 和异步 get_db 依赖
-from .. import crud, schemas, models
-from ..database import get_db, AsyncSessionLocal # 导入 AsyncSessionLocal
-from ..dependencies import get_llm_orchestrator
-from ..services import background_analysis_service, novel_parser_service
-from ..services.vector_store_service import VectorStoreService, get_vector_store_service # 统一使用 VectorStoreService
-from ..llm_orchestrator import LLMOrchestrator
+# 修正导入路径
+from .. import crud, schemas
+from ..database import get_db
+from ..services import text_processing_utils
+from ..services import background_analysis_service
+from ..services.vector_store_service import VectorStoreService, get_vector_store_service # 引入向量存储服务
 
 logger = logging.getLogger(__name__)
-# 定义路由，并设置固定的前缀和标签
+
 router = APIRouter(
     prefix="/api/v1/novels",
     tags=["Novels - 小说管理"],
 )
 
 
-# --- 响应模型 (无变化) ---
-class PaginatedNovels(BaseModel):
-    total: int
-    novels: List[schemas.Novel]
+# --- 基本 CRUD 端点 ---
 
-
-# --- 后台任务辅助函数 (无变化) ---
-def run_full_analysis_in_background(novel_id: int, llm_orchestrator_instance: LLMOrchestrator):
-    """
-    在后台运行完整的分析流程。
-    """
-    import asyncio
-
-    async def analysis_task():
-        async with AsyncSessionLocal() as db:
-            try:
-                logger.info(f"后台任务开始：为小说 {novel_id} 运行完整分析。")
-                await background_analysis_service.run_full_analysis(
-                    db=db,
-                    novel_id=novel_id,
-                    llm_orchestrator=llm_orchestrator_instance
-                )
-                logger.info(f"后台任务成功完成：小说 {novel_id} 的完整分析。")
-            except Exception as e:
-                logger.error(f"后台任务失败：小说 {novel_id} 的分析过程中发生错误。错误: {e}", exc_info=True)
-                try:
-                    novel_to_update = await crud.get_novel(db, novel_id)
-                    if novel_to_update:
-                        novel_to_update.analysis_status = schemas.AnalysisStatus.FAILED
-                        novel_to_update.analysis_errors = str(e)
-                        await crud.update_novel(db, novel_id=novel_id, novel_update=novel_to_update)
-                except Exception as db_update_error:
-                     logger.error(f"更新小说 {novel_id} 失败状态时再次发生错误: {db_update_error}", exc_info=True)
-
-    asyncio.run(analysis_task())
-
-
-# --- API 端点 ---
 @router.post(
-    "/upload",
-    response_model=schemas.Novel,
-    status_code=status.HTTP_202_ACCEPTED,
-    summary="上传小说文件并创建小说条目"
+    "/",
+    response_model=schemas.NovelRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="创建新小说（通过上传文件）"
 )
-async def create_novel_and_process_file(
-    title: str = Form(..., description="小说的标题"),
-    author: str = Form(..., description="小说的作者"),
-    description: Optional[str] = Form(None, description="小说的简要描述"),
-    file: UploadFile = File(..., description="包含小说内容的文本文件"),
-    background_tasks: BackgroundTasks = Depends(),
-    db: AsyncSession = Depends(get_db),
-    llm_orchestrator: LLMOrchestrator = Depends(get_llm_orchestrator)
+async def create_novel_and_process_file_endpoint(
+    title: str = Form(...),
+    author: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db)
 ):
     """
-    上传一个文本文件来创建一本新的小说。
-    - **创建小说记录**: 在数据库中创建一个新的小说条目。
-    - **处理文件内容**: 读取文件内容并将其存储。
-    - **触发后台分析**: 将完整的小说分析任务添加到后台执行。
+    上传一个 .txt 文件来创建一本新的小说。
+    服务端会读取文件内容，按章节切分，并将小说和章节信息存入数据库。
+    这个过程在一个数据库事务中完成，确保原子性。
     """
-    try:
-        # --- 【修改】开始事务控制 ---
-        async with db.begin():
-            novel_create_schema = schemas.NovelCreate(
-                title=title,
-                author=author,
-                description=description,
-                # 初始状态
-                analysis_status=schemas.AnalysisStatus.PENDING,
-                vectorization_status=schemas.VectorizationStatus.PENDING
-            )
-            # 1. 创建小说条目
-            db_novel = await crud.create_novel(db, novel_create=novel_create_schema)
-
-            # 读取并处理文件内容
-            file_content = (await file.read()).decode('utf-8')
-            chapters_to_create = novel_parser_service.parse_novel_text(file_content)
-
-            # 为章节设置 novel_id
-            for chap in chapters_to_create:
-                chap.novel_id = db_novel.id
-
-            # 2. 批量创建章节 (在同一个事务中)
-            if chapters_to_create:
-                await crud.bulk_create_chapters(db, chapters=chapters_to_create)
-            
-            # 刷新 db_novel 对象以确保在事务提交后可以访问其数据
-            await db.refresh(db_novel)
-        # --- 【修改】事务控制结束 ---
-        # 只有在 async with db.begin() 块成功完成后，才会提交所有更改
-
-        # 将分析任务添加到后台
-        background_tasks.add_task(run_full_analysis_in_background, db_novel.id, llm_orchestrator)
-        logger.info(f"已为小说 '{db_novel.title}' (ID: {db_novel.id}) 添加后台分析任务。")
-
-        return db_novel
-    except Exception as e:
-        logger.error(f"上传和处理小说文件时出错: {e}", exc_info=True)
-        # 如果事务中发生错误，async with db.begin() 会自动回滚
+    if not file.filename or not file.filename.endswith('.txt'):
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"处理小说文件失败: {str(e)}"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="无效的文件类型。请上传 .txt 文件。"
+        )
+    try:
+        content_bytes = await file.read()
+        content = content_bytes.decode('utf-8')
+    except UnicodeDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="文件编码错误。请确保文件为 UTF-8 编码。"
+        )
+    
+    chapters_data = text_processing_utils.split_text_into_chapters(content)
+    if not chapters_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="未能从文件中解析出任何章节。请检查文件格式。"
         )
 
+    novel_create_schema = schemas.NovelCreate(title=title, author=author, description=description)
+    
+    try:
+        async with db.begin():
+            db_novel = await crud.create_novel(db=db, novel_create=novel_create_schema)
+            chapters_to_create = [
+                schemas.ChapterCreate(
+                    title=chap['title'],
+                    content=chap['content'],
+                    novel_id=db_novel.id,
+                    chapter_index=i
+                ) for i, chap in enumerate(chapters_data)
+            ]
+            await crud.bulk_create_chapters(db=db, chapters_create=chapters_to_create)
+        
+        logger.info(f"成功创建小说 '{title}' (ID: {db_novel.id}) 及 {len(chapters_to_create)} 个章节。")
+        return db_novel
+    except IntegrityError as e:
+        logger.warning(f"创建小说 '{title}' 失败，可能标题已存在: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"创建小说失败，可能标题 '{title}' 已存在。"
+        )
+    except Exception as e:
+        logger.error(f"创建小说 '{title}' 过程中发生未知错误: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="创建小说过程中发生内部错误。"
+        )
 
-@router.get("/", response_model=schemas.PaginatedResponse[schemas.Novel], summary="获取小说分页列表")
-async def read_novels(
+@router.get(
+    "/",
+    response_model=schemas.PaginatedResponse[schemas.NovelRead],
+    summary="获取所有小说（分页）"
+)
+async def read_novels_paginated(
     db: AsyncSession = Depends(get_db),
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(10, ge=1, le=100, description="每页数量")
 ):
     skip = (page - 1) * page_size
-    items_list, total_count = await crud.get_novels_and_count(db, skip=skip, limit=page_size)
+    novels, total_count = await crud.get_novels_and_count(db, skip=skip, limit=page_size)
     total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 0
-    return schemas.PaginatedResponse(total_count=total_count, page=page, page_size=page_size, total_pages=total_pages, items=items_list)
-
+    return schemas.PaginatedResponse(total_count=total_count, page=page, page_size=page_size, total_pages=total_pages, items=novels)
 
 @router.get(
     "/{novel_id}",
-    response_model=schemas.Novel,
-    summary="获取单本小说的详细信息"
+    response_model=schemas.NovelReadWithDetails,
+    summary="获取单个小说的详细信息"
 )
-async def read_novel(
-    novel_id: int = Path(..., description="要检索的小说的ID"),
+async def read_novel_details(
+    novel_id: int = Path(..., gt=0, description="要检索的小说ID"),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    通过ID获取单本小说的详细信息，包括其关联的章节。
-    """
-    db_novel = await crud.get_novel(db, novel_id=novel_id)
+    db_novel = await crud.get_novel_with_details(db, novel_id=novel_id)
     if db_novel is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {novel_id} 的小说未找到。")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"小说ID {novel_id} 未找到。")
     return db_novel
-
 
 @router.put(
     "/{novel_id}",
-    response_model=schemas.Novel,
-    summary="更新一本小说的信息"
+    response_model=schemas.NovelRead,
+    summary="更新小说信息"
 )
-async def update_novel(
-    novel_id: int,
-    novel: schemas.NovelUpdate,
+async def update_novel_endpoint(
+    novel_id: int = Path(..., gt=0, description="要更新的小说ID"),
+    novel_in: schemas.NovelUpdate = Body(...),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    更新数据库中已存在的小说的信息。
-    """
-    updated_novel = await crud.update_novel(db, novel_id=novel_id, novel_update=novel)
-    if updated_novel is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {novel_id} 的小说未找到。")
-    return updated_novel
-
+    db_novel = await crud.update_novel(db, novel_id=novel_id, novel_update=novel_in)
+    if db_novel is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"小说ID {novel_id} 未找到，无法更新。")
+    return db_novel
 
 @router.delete(
     "/{novel_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="删除一本小说"
 )
-async def delete_novel(
-    novel_id: int,
+async def delete_novel_endpoint(
+    novel_id: int = Path(..., gt=0, description="要删除的小说ID"),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    从数据库中永久删除一本小说及其所有关联数据。
-    """
     success = await crud.delete_novel(db, novel_id=novel_id)
     if not success:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {novel_id} 的小说未找到。")
-    return None # 对于 204 No Content，不返回任何 body
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"小说ID {novel_id} 未找到，无法删除。")
+    logger.info(f"小说ID {novel_id} 已被删除。")
+    return None
 
+# --- 高级功能性端点 ---
 
-@router.get(
-    "/{novel_id}/analysis-status",
-    response_model=schemas.NovelAnalysisStatusInfo,
-    summary="获取小说的分析状态"
+@router.post(
+    "/{novel_id}/reanalyze",
+    response_model=schemas.JobSubmissionResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="触发对小说的后台重新分析"
 )
-async def get_novel_analysis_status(
-    novel_id: int = Path(..., description="要查询状态的小说的ID"),
+async def reanalyze_novel_endpoint(
+    novel_id: int = Path(..., gt=0, description="要重新分析的小说ID"),
+    background_tasks: BackgroundTasks = Depends(),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    查询并返回指定小说的当前分析和向量化状态。
+    触发一个后台任务，对指定小说进行全面的重新分析。
     """
-    db_novel = await crud.get_novel(db, novel_id=novel_id)
-    if db_novel is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {novel_id} 的小说未找到。")
+    if not await crud.get_novel(db, novel_id=novel_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"小说ID {novel_id} 未找到。")
     
-    return schemas.NovelAnalysisStatusInfo(
-        novel_id=db_novel.id,
-        analysis_status=db_novel.analysis_status,
-        vectorization_status=db_novel.vectorization_status,
-        analysis_errors=db_novel.analysis_errors,
-        vectorization_errors=db_novel.vectorization_errors,
-        qdrant_collection_name=db_novel.qdrant_collection_name,
-        last_updated=db_novel.updated_at.isoformat() if db_novel.updated_at else None,
-    )
-
+    background_tasks.add_task(background_analysis_service.start_full_analysis, novel_id=novel_id)
+    
+    message = f"已提交对小说ID {novel_id} 的重新分析任务。"
+    logger.info(message)
+    return schemas.JobSubmissionResponse(message=message, job_id=str(novel_id))
 
 @router.post(
     "/{novel_id}/vectorize",
+    response_model=schemas.JobSubmissionResponse,
     status_code=status.HTTP_202_ACCEPTED,
-    summary="触发指定小说的后台向量化任务"
+    summary="为小说内容创建或更新向量索引"
 )
-async def trigger_novel_vectorization(
-    novel_id: int = Path(..., description="要进行向量化的小说的ID"),
+async def vectorize_novel_endpoint(
+    novel_id: int = Path(..., gt=0, description="要向量化的小说ID"),
     background_tasks: BackgroundTasks = Depends(),
-    vector_store_service: VectorStoreService = Depends(get_vector_store_service),
+    db: AsyncSession = Depends(get_db),
+    vector_store_service: VectorStoreService = Depends(get_vector_store_service)
+):
+    """
+    为指定小说触发后台向量化任务。
+    服务会提取所有章节内容，进行切分，然后存入向量数据库。
+    """
+    if not await crud.get_novel(db, novel_id=novel_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"小说ID {novel_id} 未找到。")
+
+    # 检查向量存储服务是否就绪
+    if not vector_store_service.is_ready():
+         raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="向量存储服务未配置或未就绪，无法执行向量化。"
+        )
+
+    # 将耗时的向量化操作放入后台任务
+    background_tasks.add_task(vector_store_service.create_or_update_novel_vector_index, novel_id=novel_id)
+    
+    message = f"已提交对小说ID {novel_id} 的向量化任务。"
+    logger.info(message)
+    return schemas.JobSubmissionResponse(message=message, job_id=f"vectorize_{novel_id}")
+
+@router.get(
+    "/{novel_id}/analysis-status",
+    response_model=schemas.NovelAnalysisStatus,
+    summary="获取小说的分析状态"
+)
+async def get_novel_analysis_status_endpoint(
+    novel_id: int = Path(..., gt=0, description="要查询的小说ID"),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    将指定小说的内容向量化任务添加到后台执行。
+    获取指定小说的各类分析任务（如向量化）的当前状态。
     """
     db_novel = await crud.get_novel(db, novel_id=novel_id)
-    if db_novel is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {novel_id} 的小说未找到。")
-
-    # 注意：后台任务的数据库会话处理逻辑同上
-    def vectorize_task():
-        import asyncio
-        async def async_vectorize_task():
-            async with AsyncSessionLocal() as task_db:
-                await background_analysis_service.run_vectorization(
-                    db=task_db,
-                    novel_id=novel_id,
-                    vector_store_service=vector_store_service
-                )
-        asyncio.run(async_vectorize_task())
-
-    background_tasks.add_task(vectorize_task)
-    logger.info(f"已为小说 ID {novel_id} 添加后台向量化任务。")
+    if not db_novel:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"小说ID {novel_id} 未找到。")
     
-    return {"message": "小说向量化任务已成功添加到后台执行队列。"}
+    # 在实际应用中，这些状态信息可能存储在 novel 表的字段中，或一个专门的状态跟踪表中
+    # 这里我们使用 NovelRead 模型中已有的字段
+    return schemas.NovelAnalysisStatus(
+        id=db_novel.id,
+        title=db_novel.title,
+        vectorization_status=db_novel.vectorization_status,
+        last_analyzed_at=db_novel.last_analyzed_at
+    )
+
+@router.get(
+    "/{novel_id}/character-relationship-graph",
+    response_model=schemas.GraphData,
+    summary="获取角色关系图数据"
+)
+async def get_character_relationship_graph_data(
+    novel_id: int = Path(..., gt=0, description="小说ID"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取用于可视化展示的角色关系网络图数据。
+    """
+    # 验证小说是否存在
+    if not await crud.get_novel(db, novel_id=novel_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"小说ID {novel_id} 未找到。")
+
+    graph_data = await crud.get_character_relationship_graph(db, novel_id=novel_id)
+    if not graph_data or not graph_data['nodes']:
+        logger.info(f"小说ID {novel_id} 没有可供显示的角色关系图数据。")
+        # 即使没有数据，也返回一个空的图结构，而不是404
+    
+    return schemas.GraphData(**graph_data)
+
+
+@router.get(
+    "/{novel_id}/event-relationship-graph",
+    response_model=schemas.GraphData,
+    summary="获取事件关系图数据"
+)
+async def get_event_relationship_graph_data(
+    novel_id: int = Path(..., gt=0, description="小说ID"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    获取用于可视化展示的事件关系网络图数据。
+    """
+    # 验证小说是否存在
+    if not await crud.get_novel(db, novel_id=novel_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"小说ID {novel_id} 未找到。")
+
+    graph_data = await crud.get_event_relationship_graph(db, novel_id=novel_id)
+    if not graph_data or not graph_data['nodes']:
+        logger.info(f"小说ID {novel_id} 没有可供显示的事件关系图数据。")
+        # 返回空图结构
+    
+    return schemas.GraphData(**graph_data)

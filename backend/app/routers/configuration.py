@@ -2,128 +2,104 @@
 import logging
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Body, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import crud, schemas
-from ..dependencies import get_db, get_llm_orchestrator
-from ..llm_orchestrator import LLMOrchestrator
-from ..llm_providers import PROVIDER_CLASSES
-from ..services.config_service import ConfigService
+# 修正导入路径
+from .. import schemas, crud
+from ..database import get_db
+from ..services import config_service # 导入配置服务
+from ..services.config_service import ConfigUpdateError, ConfigValidationError # 导入自定义异常
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/v1/configuration",
-    tags=["Application Configuration"]
+    tags=["Configuration - 应用配置管理"],
 )
+
+
+# --- API 端点 ---
 
 @router.get(
     "/",
-    response_model=schemas.ConfigSchema,
-    summary="获取当前完整的应用配置"
+    response_model=schemas.ApplicationConfig, # 响应模型为完整的应用配置
+    summary="获取当前的应用配置"
 )
-async def get_application_config(config_service: ConfigService = Depends()):
+async def get_application_config_endpoint():
     """
-    获取应用程序当前的全部配置信息。
+    获取当前加载在内存中的完整应用配置信息。
     """
-    return await config_service.get_config()
+    # 将此函数转换为 async def 以保持API一致性
+    current_config = config_service.get_current_config()
+    if not current_config:
+         # 这种情况通常只在应用启动失败时发生
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="无法加载应用配置。"
+        )
+    return current_config
+
 
 @router.put(
     "/",
-    response_model=schemas.ConfigSchema,
+    response_model=schemas.ApplicationConfig, # 更新成功后返回新的配置
     summary="更新并保存应用配置"
 )
-async def update_application_config(
-    config_data: schemas.ConfigSchema,
-    config_service: ConfigService = Depends()
+async def update_application_config_endpoint(
+    config_data: schemas.ApplicationConfig = Body(...),
 ):
     """
-    接收新的配置数据，验证后保存到 `config.json` 文件。
+    接收新的应用配置，验证后更新内存中的配置并保存到 `config.json` 文件中。
+    这是一个原子操作，更新会立即生效。
     """
     try:
+        # config_service.update_config 是异步的，因为它执行文件I/O
         updated_config = await config_service.update_config(config_data)
+        logger.info("应用配置已成功更新。")
         return updated_config
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        logger.error(f"更新配置时发生未知错误: {e}", exc_info=True)
+    except ConfigValidationError as e:
+        logger.warning(f"配置更新失败，数据校验错误: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"配置数据校验失败: {e}"
+        )
+    except ConfigUpdateError as e:
+        logger.error(f"配置更新失败，写入文件时发生错误: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="更新配置文件时发生未知错误。"
+            detail=f"更新配置文件时发生错误: {e}"
         )
-
-@router.get(
-    "/providers",
-    response_model=List[str],
-    summary="获取所有可用的LLM Provider"
-)
-async def get_available_providers():
-    """
-    返回系统中所有已注册的LLM Provider的名称列表。
-    """
-    return list(PROVIDER_CLASSES.keys())
-
-@router.post(
-    "/test-llm-connection",
-    response_model=schemas.LLMResponse,
-    summary="测试到LLM的连接"
-)
-async def test_llm_connection(
-    llm_orchestrator: LLMOrchestrator = Depends(get_llm_orchestrator)
-):
-    """
-    使用当前配置，向LLM发送一个简单的测试请求，以验证连接和API密钥是否有效。
-    """
-    try:
-        response = await llm_orchestrator.generate_completion(
-            prompt="Hello, world! Say 'test successful'.",
-            max_tokens=10
-        )
-        return schemas.LLMResponse(response=response)
     except Exception as e:
-        logger.error(f"测试LLM连接失败: {e}", exc_info=True)
+        logger.exception("更新配置时发生未知错误。")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"测试LLM连接失败: {e}"
+            detail="更新配置时发生未知内部错误。"
         )
 
+
 @router.get(
-    "/referable-files",
-    response_model=schemas.PaginatedReferableFilesResponse,
-    summary="获取可作为引用来源的文件列表"
+    "/novels-selector",
+    response_model=List[schemas.NovelSelectorItem], # 响应模型为专用的选择器项列表
+    summary="获取用于配置页面选择器的小说列表"
 )
-async def get_referable_files_list(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+async def get_novels_for_config_selector_endpoint(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    获取可作为引用来源的小说文件信息（当前实现仅为小说）。
+    获取一个简化的小说列表（仅包含id和title），
+    主要用于前端配置页面中需要选择小说的下拉菜单。
     """
-    skip = (page - 1) * page_size
-    
-    # 直接异步调用CRUD函数
-    novels, total_count = await crud.get_novels_with_count(db, skip=skip, limit=page_size)
-    
-    items = [
-        schemas.ReferableFileItem(
-            id=f"novel_content_{novel.id}",
-            name=novel.title,
-            file_type="novel_content",
-            created_at=novel.created_at,
-            updated_at=novel.updated_at,
-            description=novel.description or "",
-            novel_id=novel.id
-        ) for novel in novels
-    ]
-    
-    total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 0
-    
-    return schemas.PaginatedReferableFilesResponse(
-        total_count=total_count,
-        page=page,
-        page_size=page_size,
-        total_pages=total_pages,
-        items=items
-    )
+    try:
+        # 获取所有小说，限制数量以防万一，但通常配置页会需要所有
+        # crud.get_novels_with_count 已经是异步的
+        novels, _ = await crud.get_novels_with_count(db=db, skip=0, limit=1000) # 假设1000个足够了
+        
+        # 将 Novel 对象转换为 NovelSelectorItem
+        return [schemas.NovelSelectorItem(id=novel.id, title=novel.title) for novel in novels]
+    except Exception as e:
+        logger.error(f"为配置选择器获取小说列表时出错: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取小说列表时发生内部错误。"
+        )

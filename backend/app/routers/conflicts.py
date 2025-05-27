@@ -1,84 +1,94 @@
 # backend/app/routers/conflicts.py
 import logging
-from typing import List, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Body, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# 导入 CRUD 操作、schemas 和异步 get_db 依赖
+# 修正导入路径
 from .. import crud, schemas
 from ..database import get_db
 
 logger = logging.getLogger(__name__)
 
+# 定义路由，将 novel_id 作为共同路径前缀
 router = APIRouter(
-    prefix="/novels/{novel_id}/conflicts",
-    tags=["Conflicts - 冲突管理"]
+    prefix="/api/v1/novels/{novel_id}/conflicts",
+    tags=["Conflicts - (小说下)冲突与矛盾管理"],
 )
 
 
-# ==============================================================================
-# --- Conflicts (冲突) API Endpoints ---
-# ==============================================================================
+# --- API 端点 ---
 
 @router.post(
     "/",
-    response_model=schemas.Conflict,
+    response_model=schemas.ConflictRead,
     status_code=status.HTTP_201_CREATED,
-    summary="为指定小说创建一个新冲突"
+    summary="为指定小说创建一个新的冲突"
 )
-async def create_conflict_for_novel(
-    novel_id: int = Path(..., gt=0, description="所属的小说ID"),
+async def create_conflict_for_novel_endpoint(
+    novel_id: int = Path(..., gt=0, description="冲突所属的小说ID"),
     conflict_in: schemas.ConflictCreate = Body(...),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    为指定小说创建一个新的冲突。
+    为指定小说创建一个新的冲突/矛盾。
+    - 在创建前会验证小说是否存在。
     """
-    log_prefix = f"[Router-CreateConflict NovelID:{novel_id}]"
-    logger.info(f"{log_prefix} 收到创建冲突请求。")
-
     # 验证小说是否存在
     db_novel = await crud.get_novel(db, novel_id=novel_id)
     if not db_novel:
-        logger.warning(f"{log_prefix} 创建失败：小说ID {novel_id} 未找到。")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {novel_id} 的小说未找到。")
     
     # 确保 conflict_in 中的 novel_id 与路径参数一致
-    if conflict_in.novel_id is None:
-        conflict_in.novel_id = novel_id
-    elif conflict_in.novel_id != novel_id:
+    if conflict_in.novel_id != novel_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"请求体中的 novel_id ({conflict_in.novel_id}) 与路径中的 novel_id ({novel_id}) 不匹配。"
         )
-
-    try:
-        # 【原生异步调用】
-        db_conflict = await crud.create_conflict(db, conflict_create=conflict_in)
-        logger.info(f"{log_prefix} 成功创建冲突 ID: {db_conflict.id}。")
-        return db_conflict
-    except Exception as e:
-        logger.error(f"{log_prefix} 创建冲突时发生未知错误: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="创建冲突时发生内部错误。")
+    
+    # 调用异步的 crud 函数
+    db_conflict = await crud.create_conflict(db=db, conflict_create=conflict_in)
+    return db_conflict
 
 
-# 修改后的代码片段
 @router.get(
     "/",
     response_model=schemas.PaginatedResponse[schemas.ConflictRead],
-    summary="获取小说的所有冲突（分页）"
+    summary="获取指定小说的所有冲突（分页）"
 )
-async def read_conflicts(
-    novel_id: int,
+async def get_conflicts_for_novel_paginated(
+    novel_id: int = Path(..., gt=0, description="所属小说的ID"),
     db: AsyncSession = Depends(get_db),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(100, ge=1, le=200)
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(10, ge=1, le=100, description="每页数量"),
+    # 新增：与前端 ConflictListPage.tsx 筛选条件对应的查询参数
+    conflict_type: Optional[str] = Query(None, description="按冲突类型筛选"),
+    status_filter: Optional[str] = Query(None, alias="status", description="按解决状态筛选 (e.g., unresolved, resolved)"),
+    sort_by: Optional[str] = Query("name", description="排序字段 (e.g., name, conflict_type, status)"),
+    sort_dir: Optional[schemas.SortDirectionEnum] = Query(schemas.SortDirectionEnum.ASC, description="排序方向 (asc, desc)")
 ):
+    """
+    获取指定小说下的所有冲突/矛盾，支持分页、筛选和排序。
+    """
+    # 验证小说是否存在
+    db_novel = await crud.get_novel(db, novel_id=novel_id)
+    if not db_novel:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {novel_id} 的小说未找到。")
+
     skip = (page - 1) * page_size
-    items_list, total_count = await crud.get_conflicts_by_novel_and_count(
-        db, novel_id=novel_id, skip=skip, limit=page_size
+    # crud.get_conflicts_by_novel_and_count 需要支持筛选和排序参数
+    conflicts, total_count = await crud.get_conflicts_by_novel_and_count(
+        db, 
+        novel_id=novel_id, 
+        skip=skip, 
+        limit=page_size,
+        conflict_type_filter=conflict_type,
+        status_filter=status_filter,
+        sort_by=sort_by,
+        sort_direction=sort_dir
     )
+    
     total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 0
     
     return schemas.PaginatedResponse(
@@ -86,16 +96,16 @@ async def read_conflicts(
         page=page,
         page_size=page_size,
         total_pages=total_pages,
-        items=items_list
+        items=conflicts
     )
 
 
 @router.get(
     "/{conflict_id}",
-    response_model=schemas.Conflict,
+    response_model=schemas.ConflictRead,
     summary="获取单个冲突的详细信息"
 )
-async def read_single_conflict(
+async def get_single_conflict_endpoint(
     novel_id: int = Path(..., gt=0, description="所属的小说ID"),
     conflict_id: int = Path(..., gt=0, description="要检索的冲突ID"),
     db: AsyncSession = Depends(get_db)
@@ -103,7 +113,6 @@ async def read_single_conflict(
     """
     获取单个冲突的详细信息，并验证其属于指定的小说。
     """
-    # 【原生异步调用】
     db_conflict = await crud.get_conflict(db, conflict_id=conflict_id)
     if not db_conflict:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"冲突ID {conflict_id} 未找到。")
@@ -120,10 +129,10 @@ async def read_single_conflict(
 
 @router.put(
     "/{conflict_id}",
-    response_model=schemas.Conflict,
+    response_model=schemas.ConflictRead,
     summary="更新指定冲突的信息"
 )
-async def update_conflict_endpoint(
+async def update_conflict_for_novel_endpoint(
     novel_id: int = Path(..., gt=0, description="所属的小说ID"),
     conflict_id: int = Path(..., gt=0, description="要更新的冲突ID"),
     conflict_in: schemas.ConflictUpdate = Body(...),
@@ -132,29 +141,19 @@ async def update_conflict_endpoint(
     """
     更新一个冲突，并验证其属于指定的小说。
     """
-    log_prefix = f"[Router-UpdateConflict NovelID:{novel_id}, ConflictID:{conflict_id}]"
-    logger.info(f"{log_prefix} 收到更新冲突请求。")
-
-    # 【原生异步调用】
-    db_conflict_check = await crud.get_conflict(db, conflict_id=conflict_id)
-    if not db_conflict_check:
-        logger.warning(f"{log_prefix} 更新失败：冲突ID {conflict_id} 未找到。")
+    # 验证冲突存在且属于该小说
+    db_conflict_to_update = await crud.get_conflict(db, conflict_id=conflict_id)
+    if not db_conflict_to_update:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"冲突ID {conflict_id} 未找到。")
 
-    if db_conflict_check.novel_id != novel_id:
-        logger.error(f"{log_prefix} 更新失败：权限错误，冲突不属于该小说。")
+    if db_conflict_to_update.novel_id != novel_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"冲突ID {conflict_id} 不属于小说ID {novel_id}。"
         )
 
-    # 【原生异步调用】
+    # 调用异步的 crud 函数进行更新
     updated_conflict = await crud.update_conflict(db, conflict_id=conflict_id, conflict_update=conflict_in)
-    if not updated_conflict:
-        logger.error(f"{log_prefix} 更新冲突失败，在CRUD层未找到对象（理论上不应发生，因为上面已检查）。")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"更新冲突ID {conflict_id} 失败，对象可能已被删除。")
-        
-    logger.info(f"{log_prefix} 冲突信息更新成功。")
     return updated_conflict
 
 
@@ -163,7 +162,7 @@ async def update_conflict_endpoint(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="删除指定冲突"
 )
-async def delete_conflict_endpoint(
+async def delete_conflict_for_novel_endpoint(
     novel_id: int = Path(..., gt=0, description="所属的小说ID"),
     conflict_id: int = Path(..., gt=0, description="要删除的冲突ID"),
     db: AsyncSession = Depends(get_db)
@@ -171,27 +170,23 @@ async def delete_conflict_endpoint(
     """
     删除一个冲突，并验证其属于指定的小说。
     """
-    log_prefix = f"[Router-DeleteConflict NovelID:{novel_id}, ConflictID:{conflict_id}]"
-    logger.info(f"{log_prefix} 收到删除冲突请求。")
-    
-    # 【原生异步调用】
-    db_conflict_check = await crud.get_conflict(db, conflict_id=conflict_id)
-    if not db_conflict_check:
-        logger.warning(f"{log_prefix} 删除失败：未找到冲突ID {conflict_id}。")
+    # 验证冲突存在且属于该小说
+    db_conflict_to_delete = await crud.get_conflict(db, conflict_id=conflict_id)
+    if not db_conflict_to_delete:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"冲突ID {conflict_id} 未找到。")
     
-    if db_conflict_check.novel_id != novel_id:
-        logger.error(f"{log_prefix} 删除失败：权限错误，冲突不属于该小说。")
+    if db_conflict_to_delete.novel_id != novel_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"冲突ID {conflict_id} 不属于小说ID {novel_id}。"
         )
     
-    # 【原生异步调用】
+    # 调用异步的 crud 函数进行删除
     success = await crud.delete_conflict(db, conflict_id=conflict_id)
     if not success:
-        logger.error(f"{log_prefix} 删除冲突时在CRUD层失败（理论上不应发生）。")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="删除冲突时发生未知错误。")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"删除冲突ID {conflict_id} 失败，可能已被删除或不存在。"
+        )
 
-    logger.info(f"{log_prefix} 成功删除冲突。")
     return None # 204 No Content

@@ -1,148 +1,180 @@
-# backend/app/routers/llm_utils.py
-import logging
+import asyncio
+from typing import List, Dict, Any, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Body
-from sqlalchemy.orm import Session
-from typing import List, Optional, Any, Dict
+from sse_starlette import EventSourceResponse
 
-from app import schemas, crud
-from app.dependencies import get_db, get_llm_orchestrator
+from app import crud, schemas
+from app.dependencies import DBSession
+from app.exceptions import LLMAPIError, ContentSafetyException
 from app.llm_orchestrator import LLMOrchestrator
-# 导入新的统一异常
-from app.exceptions import LLMAPIError, LLMProviderNotFoundError
+from app.services.rule_application_service import RuleApplicationService
+from app.services.vector_store_service import VectorStoreService
 
-logger = logging.getLogger(__name__)
+router = APIRouter()
+orchestrator = LLMOrchestrator()
 
-router = APIRouter(
-    prefix="/llm-utils",
-    tags=["LLM Utilities"],
-)
 
-@router.get("/available-models", response_model=List[schemas.LLMProviderModelInfo])
-async def get_available_models(
-    provider_tag: Optional[str] = None,
-    db: Session = Depends(get_db),
-    orchestrator: LLMOrchestrator = Depends(get_llm_orchestrator)
-):
+@router.get("/llm-providers", response_model=List[schemas.LLMProviderInfo])
+async def get_llm_providers_info():
     """
-    获取一个或所有LLM提供商的可用模型列表。
+    获取所有可用的大语言模型（LLM）提供商及其模型列表。
     """
-    try:
-        available_models = await orchestrator.get_available_models_for_provider(provider_tag)
-        return available_models
-    except LLMProviderNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        logger.error(f"获取可用模型列表时发生未知错误: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"获取可用模型时发生内部错误: {e}")
+    providers_info = orchestrator.get_all_providers_info()
+    return providers_info
 
-@router.post("/test-connection", response_model=schemas.LLMConnectionTestResponse)
+
+@router.post("/test-llm-connection", response_model=schemas.LLMConnectionTestResponse)
 async def test_llm_connection(
-    request: schemas.LLMConnectionTestRequest,
-    db: Session = Depends(get_db),
-    orchestrator: LLMOrchestrator = Depends(get_llm_orchestrator)
+        request: schemas.LLMConnectionTestRequest
 ):
     """
     测试与指定LLM提供商的连接。
     """
-    try:
-        is_success, message, details = await orchestrator.test_provider_connection(
-            request.user_model_id,
-            request.model_api_id_override
-        )
-        return schemas.LLMConnectionTestResponse(
-            success=is_success,
-            message=message,
-            details=details
-        )
-    except LLMProviderNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        logger.error(f"测试LLM连接时发生未知错误 (模型ID: {request.user_model_id}): {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"测试连接时发生内部错误: {e}")
+    response = await orchestrator.test_provider_connection(request.model_id)
+    return response
 
 
-@router.post("/execute-step", response_model=schemas.RuleStepExecutionResult)
-async def execute_chain_step(
-    request: schemas.RuleStepExecutionRequest,
-    db: Session = Depends(get_db),
-    orchestrator: LLMOrchestrator = Depends(get_llm_orchestrator)
+@router.post("/generate", response_model=schemas.LLMResponse)
+async def generate_text(
+        request: schemas.LLMRequest
 ):
     """
-    执行单个规则链步骤（例如，用于测试或独立调用）。
+    使用指定的LLM模型生成文本。
     """
-    log_prefix = f"[API-ExecuteStep][StepID:{request.step.id}]"
-    logger.info(f"{log_prefix} 收到执行请求。模型ID: {request.model_id}, 任务类型: {request.step.task_type}")
-
     provider = orchestrator.get_llm_provider(request.model_id)
-    # --- 【修复】添加空指针检查 ---
     if not provider:
-        logger.error(f"{log_prefix} 未能找到模型ID '{request.model_id}' 对应的LLM提供商。")
-        raise HTTPException(
-            status_code=404,
-            detail=f"未能找到模型ID '{request.model_id}' 对应的LLM提供商或提供商未就绪。"
-        )
+        raise HTTPException(status_code=404, detail=f"Provider for model '{request.model_id}' not found.")
 
-    # 这里的 prompt_engineer 实例化是临时的，因为它需要一个db会话
-    # 在完整的服务中，这可能会被更好地管理
-    from app.services.prompt_engineering_service import PromptEngineeringService
-    prompt_engineer = PromptEngineeringService(db_session=db, llm_orchestrator=orchestrator)
+    response = await orchestrator.generate_with_provider(provider, request.params)
+    return response
+
+
+@router.post("/generate-stream")
+async def generate_text_stream(
+        request: schemas.LLMRequest
+):
+    """
+    使用指定的LLM模型以流式方式生成文本。
+    """
+    provider = orchestrator.get_llm_provider(request.model_id)
+    if not provider:
+        raise HTTPException(status_code=404, detail=f"Provider for model '{request.model_id}' not found.")
+
+    async def event_generator():
+        try:
+            async for chunk in provider.invoke_stream(request.params):
+                yield {"event": "message", "data": chunk.content}
+        except (LLMAPIError, ContentSafetyException) as e:
+            yield {"event": "error", "data": str(e)}
+        except Exception as e:
+            # Catch any other unexpected errors
+            yield {"event": "error", "data": f"An unexpected error occurred: {str(e)}"}
+        finally:
+            yield {"event": "end", "data": ""}
+
+    return EventSourceResponse(event_generator())
+
+
+@router.post("/get-materials-for-step", response_model=List[schemas.MaterialSnippet])
+async def get_materials_for_step(
+        request: schemas.MaterialSearchRequest,
+        db: DBSession  # <- 修正点
+):
+    """
+    为规则链的特定步骤检索相关的素材片段。
+    """
+    novel = await crud.get_novel(db, novel_id=request.novel_id)
+    if not novel:
+        raise HTTPException(status_code=404, detail="Novel not found")
+
+    vector_store_service = VectorStoreService.get_instance()
+    if not vector_store_service:
+        raise HTTPException(status_code=503, detail="Vector store service is not available.")
 
     try:
-        # 构建prompt
-        novel_obj_for_prompt = None
-        if request.novel_id:
-            # 在异步函数中，同步的db调用需要通过 to_thread 运行
-            # 但 Depends(get_db) 返回的db session不能跨线程，所以这里我们直接调用
-            # 这是一个已知的设计权衡，对于FastAPI的依赖注入和asyncio。
-            # 理想情况下，应使用异步DB session。
-            novel_obj_for_prompt = crud.get_novel(db, novel_id=request.novel_id, with_details=False)
-
-        prompt_data = await prompt_engineer.build_prompt_for_step(
-            rule_step_schema=request.step,
+        results = await vector_store_service.search_materials(
             novel_id=request.novel_id,
-            novel_obj=novel_obj_for_prompt,
-            dynamic_params=request.dynamic_params,
-            main_input_text=request.input_text
+            query=request.query,
+            k=request.k
         )
-
-        # 调用LLM
-        logger.debug(f"{log_prefix} System Prompt: {prompt_data.system_prompt[:100]}...")
-        logger.debug(f"{log_prefix} User Prompt: {prompt_data.user_prompt[:200]}...")
-
-        # 使用 orchestrator 的 generate_with_provider 方法，因为它处理了异常
-        response = await orchestrator.generate_with_provider(
-            provider=provider,
-            prompt=prompt_data.user_prompt,
-            system_prompt=prompt_data.system_prompt,
-            is_json_output=prompt_data.is_json_output_hint,
-            llm_override_parameters=request.step.parameters or {},
-        )
-
-        # 同样，后续处理也应该使用异步方式
-        # 这里只是一个示例，完整的实现可能需要一个后处理服务
-        processed_output = response.text # 简化处理
-
-        return schemas.RuleStepExecutionResult(
-            step_id=request.step.id,
-            success=True,
-            raw_output=response.text,
-            processed_output=processed_output,
-            prompt_sent=prompt_data.user_prompt,
-            system_prompt_sent=prompt_data.system_prompt,
-            model_id_used=response.model_id_used,
-            error_message=None,
-            usage=schemas.TokenUsage(
-                prompt_tokens=response.prompt_tokens,
-                completion_tokens=response.completion_tokens,
-                total_tokens=response.total_tokens
-            )
-        )
-    
-    # 捕获我们在 provider 中定义的统一异常
-    except (LLMAPIError, LLMProviderNotFoundError) as e:
-        logger.error(f"{log_prefix} 在执行步骤时捕获到LLM错误: {e}", exc_info=False)
-        raise HTTPException(status_code=502, detail=f"LLM Provider Error: {str(e)}")
-    
+        return results
     except Exception as e:
-        logger.error(f"{log_prefix} 执行规则链步骤时发生未知错误: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to search materials: {str(e)}")
+
+
+@router.post("/execute-chain-step", response_model=schemas.RuleChainExecutionResult)
+async def execute_chain_step(
+        request: schemas.RuleChainExecutionRequest,
+        db: DBSession,  # <- 修正点
+):
+    """
+    执行规则链中的单个步骤。
+    """
+    provider = orchestrator.get_llm_provider(request.model_id)
+    if not provider:
+        raise HTTPException(status_code=404, detail=f"Provider for model '{request.model_id}' not found or configured.")
+
+    novel = await crud.get_novel(db, request.novel_id)
+    if not novel:
+        raise HTTPException(status_code=404, detail=f"Novel with id {request.novel_id} not found.")
+
+    service = RuleApplicationService(
+        db_session=db,
+        llm_provider=provider,
+        novel=novel
+    )
+
+    try:
+        result = await service.apply_step(
+            step_id=request.step_id,
+            global_context=request.global_context,
+            step_context=request.step_context,
+            dry_run=request.dry_run
+        )
+        return result
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/execute-chain-step-stream")
+async def execute_chain_step_stream(
+        request: schemas.RuleChainExecutionRequest,
+        db: DBSession,  # <- 修正点
+):
+    """
+    以流式方式执行规则链的单个步骤。
+    """
+    provider = orchestrator.get_llm_provider(request.model_id)
+    if not provider:
+        raise HTTPException(status_code=404, detail=f"Provider for model '{request.model_id}' not found or configured.")
+
+    novel = await crud.get_novel(db, request.novel_id)
+    if not novel:
+        raise HTTPException(status_code=404, detail=f"Novel with id {request.novel_id} not found.")
+
+    service = RuleApplicationService(
+        db_session=db,
+        llm_provider=provider,
+        novel=novel
+    )
+
+    async def event_generator():
+        try:
+            # 流式执行的核心逻辑在RuleApplicationService中实现
+            async for chunk in service.apply_step_stream(
+                    step_id=request.step_id,
+                    global_context=request.global_context,
+                    step_context=request.step_context,
+                    dry_run=request.dry_run
+            ):
+                yield {"event": "message", "data": chunk.model_dump_json()}
+
+        except (LLMAPIError, ContentSafetyException) as e:
+            yield {"event": "error", "data": str(e)}
+        except Exception as e:
+            yield {"event": "error", "data": f"An unexpected error occurred: {str(e)}"}
+        finally:
+            yield {"event": "end", "data": ""}
+
+    return EventSourceResponse(event_generator())

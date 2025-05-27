@@ -2,138 +2,143 @@
 import logging
 import json
 import asyncio
-from typing import Optional, Dict, Any, List, Union, Tuple
-import re
+from typing import Optional, Dict, Any, List, Union, Tuple, Coroutine
 
 # 新增：导入 nltk
 try:
     import nltk
     # 检查punkt分词器是否可用，如果不可用则记录日志提示
+    # logger 在模块级别可能尚未初始化，所以这里先用 print，或者将 logger 定义提前
     try:
         nltk.data.find('tokenizers/punkt')
     except nltk.downloader.DownloadError:
-        logger.info("NLTK 'punkt' tokenizer not found. Attempting to download...")
+        print("NLTK 'punkt' tokenizer not found. Attempting to download...")
         nltk.download('punkt')
-        logger.info("'punkt' tokenizer downloaded successfully.")
+        print("'punkt' tokenizer downloaded successfully.")
 except ImportError:
     nltk = None
-    logger.warning("NLTK library not found. 'sentence' splitting strategy will not be available. Please run 'pip install nltk'.")
+    print("NLTK library not found. 'sentence' splitting strategy will not be available. Please run 'pip install nltk'.")
 
 
-from sqlalchemy.orm import Session
-# langchain 的导入保持在函数内部，以实现动态加载
+from sqlalchemy.ext.asyncio import AsyncSession # <- 修正：导入 AsyncSession
+from langchain.text_splitter import RecursiveCharacterTextSplitter # 移到函数内部或检查是否真的需要全局
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 # 从 app 包导入
 from app import crud, schemas, models
 from app.llm_orchestrator import LLMOrchestrator
 # 从 app.exceptions 导入统一的异常
 from app.exceptions import LLMAPIError, LLMAuthenticationError, LLMConnectionError, LLMRateLimitError, ContentSafetyException
-from app.database import SessionLocal
+from app.database import AsyncSessionLocal # <- 修正：导入 AsyncSessionLocal
 from app.config_service import get_config
-from app.tokenizer_service import estimate_token_count
-from ..text_processing_utils import generate_unique_id, secure_filename
+from app.tokenizer_service import estimate_token_count # <- 修正：改为 estimate_token_count
+# from ..text_processing_utils import generate_unique_id, secure_filename # text_processing_utils 在 app/ 目录下
+from app.text_processing_utils import generate_unique_id, secure_filename # 使用正确的相对导入
 from app.services.prompt_engineering_service import PromptEngineeringService
-
+# from app.services.tokenizer_service import TokenizerService # TokenizerService 已被 estimate_token_count 替代部分功能
 
 logger = logging.getLogger(__name__)
 
-# --- 辅助函数：配置获取 (无变化) ---
-def _get_chunk_config_from_settings() -> Dict[str, Any]:
-    """获取文本分块的配置参数"""
-    app_config = get_config()
-    default_chunk_size = 1500
-    default_chunk_overlap = 150
-    
-    analysis_chunk_settings = app_config.analysis_chunk_settings
-    
-    chunk_size = analysis_chunk_settings.chunk_size
-    chunk_overlap = analysis_chunk_settings.chunk_overlap
-    tokenizer_model_for_chunking = analysis_chunk_settings.default_tokenizer_model_for_chunking
+# 全局初始化LLMOrchestrator (保持原样)
+llm_orchestrator = LLMOrchestrator()
 
-    logger.debug(f"分块配置: size={chunk_size}, overlap={chunk_overlap}, tokenizer_model_for_chunking='{tokenizer_model_for_chunking}'")
-            
-    return {
-        "chunk_size": chunk_size,
-        "chunk_overlap": chunk_overlap,
-        "tokenizer_model": tokenizer_model_for_chunking,
-        "strategy": analysis_chunk_settings.strategy or 'recursive', # 新增：从配置读取策略
-    }
+# --- 静态工具函数 ---
+def _get_text_splitter(strategy: str, chunk_size: int, chunk_overlap: int, tokenizer_model_user_id_ref: Optional[str]) -> RecursiveCharacterTextSplitter: # <- 修正：添加 tokenizer_model_user_id_ref
+    """根据策略获取文本分割器"""
+    if strategy == 'token':
+        try:
+            # TokenizerService 实例化移除，直接使用 estimate_token_count
+            def _token_length_sync(text_to_count: str) -> int:
+                return estimate_token_count(text_to_count, model_user_id=tokenizer_model_user_id_ref)
 
-# --- 辅助函数：文本分块 (已修改) ---
+            return RecursiveCharacterTextSplitter(
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                length_function=_token_length_sync,
+                separators=["\n\n", "\n", "。", "！", "？", "，", "、", " ", ""],
+                is_separator_regex=False,
+            )
+        except Exception as e:
+            logger.warning(f"无法初始化基于Token的分割器，回退到基于字符的分割: {e}")
+
+    # 默认或回退策略：基于字符
+    # 字符估算因子应从配置获取
+    char_factor = get_config().llm_settings.tokenizer_options.default_chars_per_token_general or 2.5
+    return RecursiveCharacterTextSplitter(
+        chunk_size=int(chunk_size * char_factor),
+        chunk_overlap=int(chunk_overlap * char_factor),
+        length_function=len,
+        separators=["\n\n", "\n", "。", "！", "？", "，", "、", " ", ""],
+        is_separator_regex=False,
+    )
+
 def _split_text_into_chunks(
     text: str,
-    chunk_config: Dict[str, Any],
-    target_model_user_id_for_tokenizer: Optional[str] = None,
-    # 新增 strategy 参数
-    strategy: str = 'recursive' 
-) -> List[str]:
+    chunk_config: Dict[str, Any], # 包含 strategy, chunk_size, chunk_overlap, tokenizer_model
+    target_model_user_id_for_tokenizer: Optional[str] = None
+) -> List[str]: # <- 修正：移除了多余的 strategy 参数，它现在从 chunk_config 获取
     """使用不同策略将文本分割成块。"""
     if not text or not text.strip():
         return []
     
-    # 优先使用函数调用时传入的 strategy，否则使用 chunk_config 中的
-    effective_strategy = strategy or chunk_config.get("strategy", 'recursive')
+    effective_strategy = chunk_config.get("strategy", 'recursive')
+    chunk_size_cfg = chunk_config.get("chunk_size", 1500)
+    chunk_overlap_cfg = chunk_config.get("chunk_overlap", 150)
+    # tokenizer_model_user_id_ref 现在用于 _get_text_splitter
+    tokenizer_model_user_id_ref = target_model_user_id_for_tokenizer or chunk_config.get("tokenizer_model")
+
     log_prefix = "[TextSplitter]"
 
-    # --- 新增：NLTK 句子分割策略 ---
     if effective_strategy == 'sentence':
         if nltk:
             try:
                 logger.debug(f"{log_prefix} 使用 'sentence' 策略进行文本分割。")
-                return nltk.sent_tokenize(text, language='english') # 对于中文文本，可能需要更专业的句子分割器，但nltk是一个好的开始
+                return nltk.sent_tokenize(text) # language='english' 可能不适合中文
             except Exception as e_nltk:
                 logger.error(f"{log_prefix} 使用 NLTK sent_tokenize 分割时出错: {e_nltk}。将回退到 'recursive' 策略。")
+                effective_strategy = 'recursive' # 明确回退
         else:
             logger.warning(f"{log_prefix} 请求使用 'sentence' 策略，但 NLTK 未安装。将回退到 'recursive' 策略。")
+            effective_strategy = 'recursive' # 明确回退
     
-    # --- 保留并作为默认/回退的 RecursiveCharacterTextSplitter 策略 ---
-    logger.debug(f"{log_prefix} 使用 'recursive' (token-based 或 character-based) 策略进行文本分割。")
-    chunk_size_tokens = chunk_config.get("chunk_size", 1500)
-    chunk_overlap_tokens = chunk_config.get("chunk_overlap", 150)
-    tokenizer_model_user_id_ref = target_model_user_id_for_tokenizer or chunk_config.get("tokenizer_model", "gpt-3.5-turbo")
-    
-    try:
-        from langchain.text_splitter import RecursiveCharacterTextSplitter as LangchainRecursiveSplitter
-
-        def _token_length_sync(text_to_count: str) -> int:
-            return estimate_token_count(text_to_count, model_user_id=tokenizer_model_user_id_ref)
-
-        text_splitter = LangchainRecursiveSplitter(
-            chunk_size=chunk_size_tokens,
-            chunk_overlap=chunk_overlap_tokens,
-            length_function=_token_length_sync,
-            separators=["\n\n", "\n", "。", "！", "？", "，", "、", " ", ""],
-        )
-        split_chunks = text_splitter.split_text(text)
-        logger.debug(f"{log_prefix} 文本基于Token估算分割为 {len(split_chunks)} 块。")
-        return split_chunks
-    except ImportError:
-        logger.warning(f"{log_prefix} langchain.text_splitter 未安装。将回退到基于字符的文本分割。")
-    except Exception as e_token_split:
-        logger.warning(f"{log_prefix} 基于Token的文本分割失败 ({e_token_split})。回退到基于字符的分割。")
-    
-    try:
-        from langchain.text_splitter import RecursiveCharacterTextSplitter as LangchainRecursiveSplitter
-        app_cfg_for_char_factor = get_config()
-        char_factor = app_cfg_for_char_factor.llm_settings.tokenizer_options.default_chars_per_token_general or 2.5
+    if effective_strategy == 'recursive': # 确保在回退后执行此逻辑
+        logger.debug(f"{log_prefix} 使用 'recursive' (token-based 或 character-based) 策略进行文本分割。")
+        try:
+            # from langchain.text_splitter import RecursiveCharacterTextSplitter # 移到全局或_get_text_splitter
+            text_splitter = _get_text_splitter(
+                'token', # 总是先尝试token 기반
+                chunk_size_cfg,
+                chunk_overlap_cfg,
+                tokenizer_model_user_id_ref
+            )
+            split_chunks = text_splitter.split_text(text)
+            logger.debug(f"{log_prefix} 文本基于Token估算分割为 {len(split_chunks)} 块。")
+            return split_chunks
+        except ImportError: # langchain 可能未安装
+            logger.warning(f"{log_prefix} langchain.text_splitter 未安装或初始化失败。无法进行基于Token的分割。")
+        except Exception as e_token_split:
+            logger.warning(f"{log_prefix} 基于Token的文本分割失败 ({e_token_split})。")
         
-        char_splitter = LangchainRecursiveSplitter(
-            chunk_size=int(chunk_size_tokens * char_factor),
-            chunk_overlap=int(chunk_overlap_tokens * char_factor),
-            separators=["\n\n", "\n", "。", "！", "？", "，", "、", " ", ""],
-        )
-        split_chunks_char = char_splitter.split_text(text)
-        logger.debug(f"{log_prefix} 文本基于字符估算分割为 {len(split_chunks_char)} 块。")
-        return split_chunks_char
-    except ImportError:
-        logger.error(f"{log_prefix} RecursiveCharacterTextSplitter 未找到。无法进行文本分块。")
-        return [text]
-    except Exception as e_char_split_final:
-        logger.error(f"{log_prefix} 最终尝试基于字符分割时也发生错误: {e_char_split_final}。返回整个文本。")
-        return [text]
+        # 如果基于Token的分割失败或Langchain不可用，则回退到基于字符的分割
+        logger.warning(f"{log_prefix} 回退到基于字符的文本分割。")
+        try:
+            text_splitter_char = _get_text_splitter(
+                'character', # 明确指定字符策略
+                chunk_size_cfg,
+                chunk_overlap_cfg,
+                None # 字符分割不需要tokenizer模型参考
+            )
+            split_chunks_char = text_splitter_char.split_text(text)
+            logger.debug(f"{log_prefix} 文本基于字符估算分割为 {len(split_chunks_char)} 块。")
+            return split_chunks_char
+        except Exception as e_char_split_final:
+            logger.error(f"{log_prefix} 最终尝试基于字符分割时也发生错误: {e_char_split_final}。返回整个文本。")
+            return [text] # 作为最差情况返回
+    
+    logger.error(f"{log_prefix} 未能确定有效的分割策略。返回整个文本。")
+    return [text] # 最后的保障
 
-
-# --- 辅助函数：结果合并策略 (无变化) ---
+# --- 结果合并策略 (保持原样，但确保日志和调用正确) ---
 def _merge_sentiment_results(chunk_results: List[Dict[str, Any]], log_prefix: str) -> Optional[Dict[str, Any]]:
     if not chunk_results: return None
     valid_scores = [res.get("overall_sentiment_score") for res in chunk_results if isinstance(res.get("overall_sentiment_score"), (int, float))]
@@ -165,23 +170,23 @@ def _merge_list_results(chunk_results: List[Any], log_prefix: str, item_key_for_
         try:
             return list(set(merged_list)) if all(isinstance(i, (str, int, float, bool, tuple)) for i in merged_list) else merged_list
         except TypeError:
-            return merged_list
+            return merged_list # 如果包含不可哈希类型，无法去重，直接返回
 
     seen_identifiers = set()
     unique_items_list = []
-    for item in merged_list:
-        identifier = item.get(item_key_for_deduplication)
+    for item_dict in merged_list: # 此时 merged_list 包含字典
+        identifier = item_dict.get(item_key_for_deduplication)
         if identifier is not None:
-            identifier_hashable = tuple(sorted(identifier)) if isinstance(identifier, list) else identifier
+            identifier_hashable = tuple(sorted(identifier)) if isinstance(identifier, list) else identifier # 尝试哈希列表
             try:
                 if identifier_hashable not in seen_identifiers:
-                    unique_items_list.append(item)
+                    unique_items_list.append(item_dict)
                     seen_identifiers.add(identifier_hashable)
-            except TypeError:
+            except TypeError: # 捕获列表或字典等不可哈希类型的错误
                 logger.warning(f"{log_prefix} 去重时遇到不可哈希标识符 '{identifier_hashable}' (类型: {type(identifier)})，此条目直接添加。")
-                unique_items_list.append(item)
+                unique_items_list.append(item_dict) # 直接添加不可哈希的项
         else:
-            unique_items_list.append(item)
+            unique_items_list.append(item_dict) # 没有去重键的也直接添加
     logger.info(f"{log_prefix} 合并了 {len(merged_list)} 项目，去重后 {len(unique_items_list)} (键: {item_key_for_deduplication})。")
     return unique_items_list
 
@@ -191,49 +196,52 @@ def _merge_summary_results(chunk_summaries: List[str], log_prefix: str) -> str:
 
 
 class BackgroundAnalysisService:
+    """
+    一个完全异步的服务类，用于处理后台分析任务。
+    """
+
     @staticmethod
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     async def _analyze_single_chunk(
-        db: Session, 
-        llm_orchestrator: LLMOrchestrator, 
-        prompt_engineer: PromptEngineeringService, 
-        task: schemas.PredefinedTaskEnum,
+        db: AsyncSession, # <- 修正：使用 AsyncSession
+        task_schema_for_prompt: schemas.RuleStepPublic, # 使用一个固定的schema结构来构建prompt
         chunk_text: str,
-        model_id: Optional[str], 
+        model_id_for_llm: Optional[str], 
         novel_id_for_context: Optional[int], 
         log_prefix: str,
-        task_name_for_log: str
-    ) -> Tuple[Optional[Any], Optional[Dict[str, str]]]:
-        """核心块分析逻辑，使用 PromptEngineeringService 和 LLMOrchestrator。"""
+        task_name_for_log: str # 用于日志的清晰任务名
+    ) -> Tuple[Optional[Any], Optional[Dict[str, str]]]: # -> 修正：返回 Tuple[Optional[Any], Optional[Dict[str, str]]]
+        """
+        [异步重构] 核心块分析逻辑，使用 PromptEngineeringService 和 LLMOrchestrator。
+        """
         analysis_result_chunk = None
         error_info_chunk = None
         
+        # PromptEngineeringService 需要 db 和 orchestrator，而 orchestrator 在此类外部实例化
+        prompt_engineer = PromptEngineeringService(db_session=db, llm_orchestrator=llm_orchestrator)
+        
         try:
-            mock_step_for_prompt = schemas.RuleStepPublic( 
-                task_type=task.value, id=0, chain_id=0, step_order=0, is_enabled=True,
-                input_source=schemas.StepInputSourceEnum.PREVIOUS_STEP, parameters={}, post_processing_rules=[],
-            )
-            
             novel_model_obj_for_prompt = None
             if novel_id_for_context:
-                 novel_model_obj_for_prompt = await asyncio.to_thread(db.get, models.Novel, novel_id_for_context)
+                 novel_model_obj_for_prompt = await db.get(models.Novel, novel_id_for_context) # <- 修正：使用 await
 
             prompt_data = await prompt_engineer.build_prompt_for_step(
-                rule_step_schema=mock_step_for_prompt,
-                novel_id=novel_id_for_context or 0,
+                rule_step_schema=task_schema_for_prompt, # 使用传入的schema
+                novel_id=novel_id_for_context or 0, # 确保novel_id有效
                 novel_obj=novel_model_obj_for_prompt,
-                dynamic_params={},
+                dynamic_params={}, # 对于纯文本分析任务，通常没有复杂的动态参数
                 main_input_text=chunk_text
             )
             
             response = await llm_orchestrator.generate(
-                model_id=model_id,
+                model_id=model_id_for_llm,
                 prompt=prompt_data.user_prompt,
                 system_prompt=prompt_data.system_prompt,
                 is_json_output=prompt_data.is_json_output_hint,
-                temperature=0.1 
+                temperature=0.1 # 可以考虑从task_schema_for_prompt或配置中获取
             )
             
-            llm_output = response.text
+            llm_output = response.text # response.text 而不是 response.content
 
             if prompt_data.is_json_output_hint:
                 try:
@@ -248,13 +256,12 @@ class BackgroundAnalysisService:
             else:
                 analysis_result_chunk = llm_output.strip()
 
-        # 适配新的统一异常
         except ContentSafetyException as e_safety:
             logger.error(f"{log_prefix} 任务 '{task_name_for_log}' 的块因内容安全问题失败: {e_safety.message}")
             error_info_chunk = {"task": task_name_for_log, "error": "内容安全异常", "details": e_safety.message[:200]}
         except (LLMAPIError, LLMConnectionError, LLMAuthenticationError, LLMRateLimitError) as e_llm:
              error_msg_llm = f"任务 '{task_name_for_log}' 的块LLM调用失败: {e_llm}"
-             logger.error(f"{log_prefix} {error_msg_llm}", exc_info=False) # 对于已知LLM错误，不打印完整堆栈
+             logger.error(f"{log_prefix} {error_msg_llm}", exc_info=False)
              error_info_chunk = {"task": task_name_for_log, "error": type(e_llm).__name__, "details": str(e_llm)[:200]}
         except Exception as e_unknown:
             error_msg_unknown = f"任务 '{task_name_for_log}' 的块分析时发生未知错误: {e_unknown}"
@@ -263,15 +270,9 @@ class BackgroundAnalysisService:
             
         return analysis_result_chunk, error_info_chunk
 
-    # _execute_analysis_task_on_chunks, _analyze_chapter_content, start_full_analysis 等其他方法保持不变...
-    # 为保持简洁，此处省略未变化的代码。实际使用时请保留这些方法的原样。
-    # ... (此处应包含文件中所有其他未修改的方法)
-
     @staticmethod
     async def _execute_analysis_task_on_chunks(
-        db: Session, 
-        llm_orchestrator: LLMOrchestrator, 
-        prompt_engineer: PromptEngineeringService, 
+        db: AsyncSession, # <- 修正：使用 AsyncSession
         task_enum: schemas.PredefinedTaskEnum,
         task_name_log: str,
         text_chunks: List[str],
@@ -289,9 +290,18 @@ class BackgroundAnalysisService:
 
         logger.info(f"{log_prefix} 开始执行 '{task_name_log}' ({len(text_chunks)} 块, 模型ID: '{model_id_for_task}')。")
         
+        # 为所有块的分析创建一个模拟的 RuleStepPublic schema，用于 PromptEngineeringService
+        mock_step_schema_for_task = schemas.RuleStepPublic(
+            task_type=task_enum.value, id=0, # 这些id和order不重要，因为只是用于构建prompt
+            chain_id=0, step_order=0, is_enabled=True,
+            input_source=schemas.StepInputSourceEnum.PREVIOUS_STEP, # 假设块内容是上一步的输出
+            parameters={}, post_processing_rules=[], 
+            model_id=model_id_for_task # 确保传递了模型ID，即使_analyze_single_chunk也接收了
+        )
+
         tasks_for_gather = [
             BackgroundAnalysisService._analyze_single_chunk( 
-                db, llm_orchestrator, prompt_engineer, task_enum, chunk, model_id_for_task, 
+                db, mock_step_schema_for_task, chunk, model_id_for_task, 
                 novel_id_for_context, 
                 f"{log_prefix} [块 {i+1}/{len(text_chunks)}]", task_name_log
             ) for i, chunk in enumerate(text_chunks)
@@ -303,8 +313,8 @@ class BackgroundAnalysisService:
             if isinstance(result_item, Exception):
                 logger.error(f"{log_prefix} 任务 '{task_name_log}' 的一个块分析时发生gather异常: {result_item}")
                 chunk_errors_for_task.append({"task": task_name_log, "error": "块分析时发生gather异常", "details": str(result_item)[:150]})
-            else:
-                res, err = result_item
+            elif result_item is not None: # 确保 result_item 不是 None
+                res, err = result_item # result_item 应该是一个元组
                 if res is not None: chunk_results_for_task.append(res)
                 if err: chunk_errors_for_task.append(err)
         
@@ -312,6 +322,7 @@ class BackgroundAnalysisService:
             logger.warning(f"{log_prefix} 任务 '{task_name_log}' 所有块均无有效结果。")
             return None, chunk_errors_for_task
         
+        # 结果合并逻辑 (保持原样)
         merged_result: Optional[Any] = None
         try:
             if task_enum == schemas.PredefinedTaskEnum.SENTIMENT_ANALYSIS_CHAPTER: merged_result = _merge_sentiment_results(chunk_results_for_task, log_prefix)
@@ -327,7 +338,7 @@ class BackgroundAnalysisService:
         except Exception as e_merge:
             logger.error(f"{log_prefix} 合并任务 '{task_name_log}' 结果时出错: {e_merge}", exc_info=True)
             chunk_errors_for_task.append({"task": f"合并 {task_name_log}", "error": "结果合并失败", "details": str(e_merge)})
-            if not merged_result and chunk_results_for_task:
+            if not merged_result and chunk_results_for_task: # 如果合并失败但有原始块结果，尝试返回第一个
                 merged_result = chunk_results_for_task[0] if len(chunk_results_for_task) == 1 else chunk_results_for_task
         
         if merged_result is not None:
@@ -338,10 +349,9 @@ class BackgroundAnalysisService:
 
     @staticmethod
     async def _analyze_chapter_content(
-        db: Session,
+        db: AsyncSession, # <- 修正：使用 AsyncSession
         chapter: models.Chapter,
-        llm_orchestrator: LLMOrchestrator, 
-        prompt_engineer: PromptEngineeringService, 
+        # llm_orchestrator 和 prompt_engineer 参数已移除，因为 _execute_analysis_task_on_chunks 会自行处理
         analysis_config: Optional[Dict[str, Any]] = None, 
         chunk_config_override: Optional[Dict[str, Any]] = None
     ) -> bool: 
@@ -360,13 +370,14 @@ class BackgroundAnalysisService:
         global_default_model_id_from_config = llm_settings_cfg.default_model_id
         
         current_chunk_config_to_use = chunk_config_override or _get_chunk_config_from_settings()
-        tokenizer_model_id_for_splitting = global_default_model_id_from_config or current_chunk_config_to_use.get("tokenizer_model")
+        # tokenizer_model_id_for_splitting 现在从 chunk_config 中获取，或使用全局默认
+        tokenizer_model_id_for_splitting = current_chunk_config_to_use.get("tokenizer_model") or global_default_model_id_from_config
         
         text_chunks_list = _split_text_into_chunks(
             chapter_content,
             current_chunk_config_to_use,
             tokenizer_model_id_for_splitting,
-            strategy=current_chunk_config_to_use.get('strategy', 'recursive') # 传递策略
+            # strategy 参数已在 current_chunk_config_to_use 中
         )
         if not text_chunks_list:
             logger.warning(f"{log_prefix} 分块后无内容，跳过。")
@@ -381,16 +392,19 @@ class BackgroundAnalysisService:
             ("summary", schemas.PredefinedTaskEnum.SUMMARIZE_CHAPTER, "章节摘要生成", True),
         ]
         any_task_produced_actual_results = False
-        effective_analysis_config = analysis_config or app_cfg.background_analysis_settings.model_dump()
+        # background_analysis_settings 可能不存在于 app_cfg，需要安全获取
+        effective_analysis_config = analysis_config or app_cfg.model_dump().get("background_analysis_settings", {})
+
 
         for crud_field_name, task_enum_to_run, task_name_for_logging, default_enabled_status in tasks_to_run_config_list:
-            task_category_name = crud_field_name.split('_')[0]
-            task_specific_settings = effective_analysis_config.get(task_category_name, {})
+            task_category_name = crud_field_name.split('_')[0] # e.g., 'sentiment' from 'sentiment_analysis'
+            # 确保 task_specific_settings 是字典
+            task_specific_settings = effective_analysis_config.get(task_category_name) if isinstance(effective_analysis_config, dict) else {}
             if isinstance(task_specific_settings, dict) and task_specific_settings.get("enabled", default_enabled_status):
                 model_id_for_this_task_run = task_model_preferences_map.get(task_enum_to_run.value, global_default_model_id_from_config)
                 
                 merged_res_from_chunks, errors_from_chunks = await BackgroundAnalysisService._execute_analysis_task_on_chunks(
-                    db, llm_orchestrator, prompt_engineer, task_enum_to_run, task_name_for_logging, 
+                    db, task_enum_to_run, task_name_for_logging, # llm_orchestrator 和 prompt_engineer 由 _execute_analysis_task_on_chunks 内部处理
                     text_chunks_list, model_id_for_this_task_run, chapter.novel_id, log_prefix
                 )
                 if merged_res_from_chunks is not None:
@@ -399,10 +413,11 @@ class BackgroundAnalysisService:
                 if errors_from_chunks:
                     accumulated_errors.extend(errors_from_chunks)
             else:
-                 logger.info(f"{log_prefix} 任务 '{task_name_for_logging}' 在配置中被禁用，跳过。")
+                 logger.info(f"{log_prefix} 任务 '{task_name_for_logging}' 在配置中被禁用或配置错误，跳过。")
 
         if any_task_produced_actual_results or accumulated_errors:
-            chapter_to_update_orm = await asyncio.to_thread(db.get, models.Chapter, chapter.id)
+            # chapter_to_update_orm = await asyncio.to_thread(db.get, models.Chapter, chapter.id)
+            chapter_to_update_orm = await db.get(models.Chapter, chapter.id) # <- 修正：直接 await
             if not chapter_to_update_orm:
                 logger.error(f"{log_prefix} 尝试更新章节分析数据时，未能在数据库中找到章节ID {chapter.id}。")
                 return False
@@ -410,12 +425,10 @@ class BackgroundAnalysisService:
             try:
                 logger.info(f"{log_prefix} 准备更新数据库。分析字段: {list(analysis_data_for_crud_update.keys())}。错误数: {len(accumulated_errors)}。")
                 
-                # 使用 to_thread 调用同步的 crud.update_chapter
-                await asyncio.to_thread(
-                    crud.update_chapter,
+                await crud.update_chapter( # <- 修正：直接 await
                     db=db,
-                    chapter_obj=chapter_to_update_orm,
-                    chapter_in=analysis_data_for_crud_update
+                    chapter_obj=chapter_to_update_orm, # crud.update_chapter 接收 chapter_obj 和 chapter_in
+                    chapter_in=schemas.ChapterUpdate(**analysis_data_for_crud_update) # 将字典转换为 Pydantic 模型
                 )
                 logger.info(f"{log_prefix} 章节分析数据已更新到数据库。")
             except Exception as e_db_upd_chapter:
@@ -427,136 +440,135 @@ class BackgroundAnalysisService:
             if non_model_cfg_errors:
                 logger.warning(f"{log_prefix} 分析完成，但有 {len(non_model_cfg_errors)} 个非配置类错误。")
                 return False
-            elif accumulated_errors:
+            elif accumulated_errors: # 只有模型未配置的错误
                 logger.info(f"{log_prefix} 分析完成，部分任务因模型未配置跳过。")
-                return True
+                return True # 视为部分成功
         
         logger.info(f"{log_prefix} 章节分析成功完成。")
         return True
 
     @staticmethod
-    def start_full_analysis( 
-        db: Session, 
-        novel_id: int,
-        llm_orchestrator: LLMOrchestrator, 
-        analysis_config_from_global: Optional[Dict[str, Any]] = None 
-    ):
+    async def run_full_analysis_in_background(novel_id: int): # <- 修正：改为 async def
+        """
+        [异步重构] 后台任务入口点，对整本小说进行分析。
+        此方法由外部的 BackgroundTasks 调用，它应该获得一个异步DB会话。
+        """
         log_prefix_novel_analysis = f"[小说分析服务 ID:{novel_id}]"
         logger.info(f"{log_prefix_novel_analysis} (后台任务) 开始对所有章节进行分析。")
 
-        novel_orm_instance: Optional[models.Novel] = None
-        prompt_engineer_instance = PromptEngineeringService(db_session=db, llm_orchestrator=llm_orchestrator)
+        async with AsyncSessionLocal() as db: # <- 修正：使用异步会话上下文管理器
+            try:
+                novel_orm_instance = await crud.get_novel(db, novel_id=novel_id, with_details=True) # <- 修正：使用 await
+                if not novel_orm_instance:
+                    logger.error(f"{log_prefix_novel_analysis} 未找到小说ID {novel_id}。中止。")
+                    return
 
-        try:
-            novel_orm_instance = crud.get_novel(db, novel_id=novel_id, with_details=True)
-            if not novel_orm_instance:
-                logger.error(f"{log_prefix_novel_analysis} 未找到小说ID {novel_id}。中止。")
-                return
+                await crud.update_novel(db=db, novel_obj=novel_orm_instance, novel_update=schemas.NovelUpdate(analysis_status=schemas.NovelAnalysisStatusEnum.IN_PROGRESS, analysis_errors=[])) # <- 修正
+                logger.info(f"{log_prefix_novel_analysis} 小说《{novel_orm_instance.title}》状态更新为“进行中”。")
+                
+                if not novel_orm_instance.chapters:
+                    logger.info(f"{log_prefix_novel_analysis} 小说《{novel_orm_instance.title}》无章节，分析标记为完成（无内容）。")
+                    await crud.update_novel(db=db, novel_obj=novel_orm_instance, novel_update=schemas.NovelUpdate(analysis_status=schemas.NovelAnalysisStatusEnum.COMPLETED_NO_CONTENT, analysis_errors=["小说无章节内容可供分析"])) # <- 修正
+                    return
 
-            crud.update_novel(db=db, novel_obj=novel_orm_instance, novel_in={"analysis_status": schemas.NovelAnalysisStatusEnum.IN_PROGRESS.value, "analysis_errors": []})
-            logger.info(f"{log_prefix_novel_analysis} 小说《{novel_orm_instance.title}》状态更新为“进行中”。")
-            
-            if not novel_orm_instance.chapters:
-                logger.info(f"{log_prefix_novel_analysis} 小说《{novel_orm_instance.title}》无章节，分析标记为完成（无内容）。")
-                crud.update_novel(db=db, novel_obj=novel_orm_instance, novel_in={"analysis_status": schemas.NovelAnalysisStatusEnum.COMPLETED_NO_CONTENT.value, "analysis_errors": ["小说无章节内容可供分析"]})
-                return
+                sorted_chapters_list = sorted(list(novel_orm_instance.chapters), key=lambda c: (c.plot_version_id is not None, c.plot_version_id or -1, c.chapter_index if c.plot_version_id is None else (c.version_order or float('inf'))))
+                total_chapters_to_analyze = len(sorted_chapters_list)
+                successful_chapters_count, chapters_with_issues_count = 0, 0
+                accumulated_novel_errors: List[str] = []
+                
+                # analysis_config_from_global 现在应从配置中获取
+                app_config_instance = get_config()
+                analysis_config_from_global = app_config_instance.model_dump().get("background_analysis_settings", {})
 
-            sorted_chapters_list = sorted(list(novel_orm_instance.chapters), key=lambda c: (c.plot_version_id is not None, c.plot_version_id or -1, c.chapter_index if c.plot_version_id is None else (c.version_order or float('inf'))))
-            total_chapters_to_analyze = len(sorted_chapters_list)
-            successful_chapters_count, chapters_with_issues_count = 0, 0
-            accumulated_novel_errors: List[str] = []
-            
-            async def run_chapter_analyses():
-                nonlocal successful_chapters_count, chapters_with_issues_count, accumulated_novel_errors 
-                tasks = [BackgroundAnalysisService._analyze_chapter_content(db, chapter, llm_orchestrator, prompt_engineer_instance, analysis_config_from_global) for chapter in sorted_chapters_list]
-                results = await asyncio.gather(*tasks, return_exceptions=True)
+                # 此处不需要额外的 asyncio.run，因为 run_full_analysis_in_background 已经是异步的
+                all_chapter_analysis_coroutines: List[Coroutine] = []
+                for chapter in sorted_chapters_list:
+                     # _analyze_chapter_content 现在是异步的
+                    all_chapter_analysis_coroutines.append(
+                        BackgroundAnalysisService._analyze_chapter_content(
+                            db, chapter, 
+                            analysis_config=analysis_config_from_global
+                        )
+                    )
+                
+                results_from_chapters = await asyncio.gather(*all_chapter_analysis_coroutines, return_exceptions=True)
 
-                for i, res in enumerate(results):
+                for i, res_chap in enumerate(results_from_chapters):
                     chap_log_prefix = f"{log_prefix_novel_analysis} [章节 {i+1}/{total_chapters_to_analyze} ID:{sorted_chapters_list[i].id}]"
-                    if isinstance(res, Exception):
-                        logger.error(f"{chap_log_prefix} 严重错误: {res}", exc_info=True)
+                    if isinstance(res_chap, Exception):
+                        logger.error(f"{chap_log_prefix} 严重错误: {res_chap}", exc_info=True)
                         chapters_with_issues_count += 1
-                        accumulated_novel_errors.append(f"章节 {sorted_chapters_list[i].id} 严重错误: {str(res)[:150]}")
-                    elif res:
+                        accumulated_novel_errors.append(f"章节 {sorted_chapters_list[i].id} 严重错误: {str(res_chap)[:150]}")
+                    elif res_chap: # res_chap 是 _analyze_chapter_content 的返回值 (bool)
                         successful_chapters_count += 1
-                    else:
+                    else: # res_chap is False
                         chapters_with_issues_count += 1
                         logger.warning(f"{chap_log_prefix} 处理完成但有警告。")
-            
-            asyncio.run(run_chapter_analyses()) 
+                
+                final_status = schemas.NovelAnalysisStatusEnum.FAILED
+                if chapters_with_issues_count == 0 and successful_chapters_count == total_chapters_to_analyze:
+                    final_status = schemas.NovelAnalysisStatusEnum.COMPLETED
+                elif successful_chapters_count > 0:
+                    final_status = schemas.NovelAnalysisStatusEnum.COMPLETED_WITH_ERRORS
+                
+                await crud.update_novel(db=db, novel_obj=novel_orm_instance, novel_update=schemas.NovelUpdate(analysis_status=final_status, analysis_errors=accumulated_novel_errors)) # <- 修正
+                logger.info(f"{log_prefix_novel_analysis} 小说《{novel_orm_instance.title}》分析结束，状态: {final_status.value}。")
 
-            final_status = schemas.NovelAnalysisStatusEnum.FAILED
-            if chapters_with_issues_count == 0 and successful_chapters_count == total_chapters_to_analyze:
-                final_status = schemas.NovelAnalysisStatusEnum.COMPLETED
-            elif successful_chapters_count > 0:
-                final_status = schemas.NovelAnalysisStatusEnum.COMPLETED_WITH_ERRORS
-            
-            crud.update_novel(db=db, novel_obj=novel_orm_instance, novel_in={"analysis_status": final_status.value, "analysis_errors": accumulated_novel_errors})
-            logger.info(f"{log_prefix_novel_analysis} 小说《{novel_orm_instance.title}》分析结束，状态: {final_status.value}。")
+            except Exception as e_main_process: # 更名为 e_main_process
+                logger.critical(f"{log_prefix_novel_analysis} 主分析流程发生严重错误: {e_main_process}", exc_info=True)
+                if novel_id and novel_orm_instance: # 确保 novel_orm_instance 已定义
+                    try:
+                        fail_msg = f"主流程严重错误: {str(e_main_process)[:200]}"
+                        current_errors = novel_orm_instance.analysis_errors or []
+                        if fail_msg not in current_errors: current_errors.append(fail_msg)
+                        # 更新 NovelUpdate schema 以匹配字段
+                        await crud.update_novel(db=db, novel_obj=novel_orm_instance, novel_update=schemas.NovelUpdate(analysis_status=schemas.NovelAnalysisStatusEnum.FAILED, analysis_errors=current_errors)) # <- 修正
+                    except Exception as e_commit_fail_status: # 更名
+                        logger.error(f"{log_prefix_novel_analysis} 提交“失败”状态时再失败: {e_commit_fail_status}", exc_info=True)
 
-        except Exception as e:
-            logger.critical(f"{log_prefix_novel_analysis} 主分析流程发生严重错误: {e}", exc_info=True)
-            if novel_id and novel_orm_instance:
-                try:
-                    fail_msg = f"主流程严重错误: {str(e)[:200]}"
-                    current_errors = novel_orm_instance.analysis_errors or []
-                    if fail_msg not in current_errors: current_errors.append(fail_msg)
-                    crud.update_novel(db=db, novel_obj=novel_orm_instance, novel_in={"analysis_status": schemas.NovelAnalysisStatusEnum.FAILED.value, "analysis_errors": current_errors})
-                except Exception as e_commit_fail:
-                    logger.error(f"{log_prefix_novel_analysis} 提交“失败”状态时再失败: {e_commit_fail}", exc_info=True)
-
-# --- 单个章节分析的后台任务触发器 (无重大变化) ---
 def trigger_chapter_analysis_task(
-    background_tasks: Optional[Any], 
+    background_tasks: Optional[Any], # FastAPI BackgroundTasks
     chapter_id: int,
     novel_id: int, 
     analysis_config_override: Optional[Dict[str, Any]] = None,
-    llm_orchestrator_override: Optional[LLMOrchestrator] = None
+    # llm_orchestrator_override 已移除，使用全局单例
 ):
-    # 此函数逻辑基本不变，仅确保其能与修改后的部分协同工作
     log_prefix = f"[ChapterAnalysisTrigger CH_ID:{chapter_id} NV_ID:{novel_id}]"
     logger.info(f"{log_prefix} 收到触发单个章节分析的请求。")
 
-    def run_single_chapter_analysis_in_background(
-        chap_id: int, nov_id: int, config_override: Optional[Dict[str, Any]], llm_orch: LLMOrchestrator 
+    async def run_single_chapter_analysis_in_background_async( # <- 修正：改为 async def
+        chap_id: int, nov_id: int, config_override: Optional[Dict[str, Any]]
     ):
         log_prefix_bg = f"{log_prefix} (后台任务)"
         logger.info(f"{log_prefix_bg} 开始。")
-        db = SessionLocal()
-        try:
-            chapter = db.get(models.Chapter, chap_id)
-            if not chapter or chapter.novel_id != nov_id:
-                logger.error(f"{log_prefix_bg} 未找到章节或章节不匹配。")
-                return
-            
-            prompt_engineer = PromptEngineeringService(db_session=db, llm_orchestrator=llm_orch)
-            
-            async def do_analysis():
-                return await BackgroundAnalysisService._analyze_chapter_content(
-                    db, chapter, llm_orch, prompt_engineer, analysis_config=config_override
+        async with AsyncSessionLocal() as db: # <- 修正：使用异步会话
+            try:
+                chapter = await db.get(models.Chapter, chap_id) # <- 修正：使用 await
+                if not chapter or chapter.novel_id != nov_id:
+                    logger.error(f"{log_prefix_bg} 未找到章节或章节不匹配。")
+                    return
+                
+                # _analyze_chapter_content 现在是异步的，并且不直接接收 orchestrator 和 prompt_engineer
+                success = await BackgroundAnalysisService._analyze_chapter_content(
+                    db, chapter, analysis_config=config_override
                 )
-            
-            success = asyncio.run(do_analysis())
-            
-            if success: logger.info(f"{log_prefix_bg} 成功完成。")
-            else: logger.warning(f"{log_prefix_bg} 完成但有警告。")
+                
+                if success: logger.info(f"{log_prefix_bg} 成功完成。")
+                else: logger.warning(f"{log_prefix_bg} 完成但有警告或错误。")
 
-        except Exception as e:
-            logger.error(f"{log_prefix_bg} 发生错误: {e}", exc_info=True)
-        finally:
-            db.close()
-            logger.info(f"{log_prefix_bg} 数据库会话关闭。")
-
-    llm_orch_to_use = llm_orchestrator_override or LLMOrchestrator()
+            except Exception as e_bg_single_chap: # 更名
+                logger.error(f"{log_prefix_bg} 发生错误: {e_bg_single_chap}", exc_info=True)
+            finally:
+                # AsyncSessionLocal 的上下文管理器会自动处理关闭
+                logger.info(f"{log_prefix_bg} 异步数据库会话自动关闭。")
 
     if background_tasks:
         background_tasks.add_task(
-            run_single_chapter_analysis_in_background,
-            chapter_id, novel_id, analysis_config_override, llm_orch_to_use
+            run_single_chapter_analysis_in_background_async, # <- 修正：调用异步版本
+            chapter_id, novel_id, analysis_config_override
         )
         logger.info(f"{log_prefix} 任务已添加至后台。")
     else: 
-        logger.warning(f"{log_prefix} 未提供BackgroundTasks，同步执行。")
-        run_single_chapter_analysis_in_background(
-            chapter_id, novel_id, analysis_config_override, llm_orch_to_use
-        )
+        logger.warning(f"{log_prefix} 未提供BackgroundTasks，将尝试直接异步运行（可能阻塞当前上下文，不推荐）。")
+        # 直接异步运行（如果上下文允许）
+        asyncio.create_task(run_single_chapter_analysis_in_background_async(chapter_id, novel_id, analysis_config_override))
