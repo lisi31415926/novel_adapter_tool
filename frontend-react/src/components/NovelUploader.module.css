@@ -1,0 +1,168 @@
+/* frontend-react/src/components/NovelUploader.module.css */
+/* NovelUploader 组件的特定样式 */
+
+.uploaderContainer {
+    /* 上传组件的根容器 */
+    padding: var(--spacing-lg);
+    /* 内边距 */
+    background-color: var(--background-color-card);
+    /* 卡片背景色 */
+    border-radius: var(--border-radius-md);
+    /* 圆角 */
+    box-shadow: var(--box-shadow-base);
+    /* 基础阴影 */
+    /* margin-bottom: var(--spacing-xl); (外边距由父组件或页面布局控制) */
+}
+
+.uploaderTitle {
+    /* 组件标题 "上传新小说进行分析" */
+    font-size: var(--font-size-lg);
+    /* 标题字体大小 */
+    color: var(--text-color-headings);
+    /* 标题颜色 */
+    margin-top: 0;
+    /* 移除默认上边距 */
+    margin-bottom: var(--spacing-lg);
+    /* 与下方表单的间距 */
+    display: flex;
+    /* 用于图标和文字对齐 */
+    align-items: center;
+    /* 垂直居中 */
+    font-weight: var(--font-weight-semibold);
+    /* 字重 */
+}
+
+.uploaderTitle svg {
+    /* 标题中的图标 */
+    color: var(--color-primary);
+    /* 图标使用主色调 */
+}
+
+.uploadForm {
+    /* 表单元素 */
+    display: flex;
+    /* 使用flex布局 */
+    flex-direction: column;
+    /* 表单组垂直排列 */
+    gap: var(--spacing-lg);
+    /* 表单组之间的间距 */
+}
+
+.formGroup {
+    /* 包裹标签和输入控件的表单组 */
+    /* composes: form-group from global; (如果希望完全继承全局样式) */
+    /* 此处可以定义特定于上传组件表单组的微调，或保持独立 */
+    margin-bottom: 0;
+    /* 由于父级 .uploadForm 已使用 gap，这里不需要额外 margin-bottom */
+}
+
+.formGroup label,
+/* 通用标签样式 */
+.fileInputLabel {
+    /* 文件选择输入框的自定义标签样式 */
+    display: block;
+    /* 标签独占一行 */
+    margin-bottom: var(--spacing-sm);
+    /* 标签与输入控件的间距 */
+    font-size: 0.9em;
+    /* 标签字体稍小 */
+    color: var(--text-color-paragraph);
+    /* 标签文本颜色 */
+    font-weight: var(--font-weight-medium);
+    /* 标签字重 */
+}
+
+.fileInputLabel {
+    /* 特别针对文件选择标签的样式 */
+    composes: btn btn-outline-secondary from global;
+    /* 使其看起来像一个轮廓按钮 */
+    padding: var(--spacing-sm) var(--spacing-md);
+    /* 调整内边距 */
+    text-align: center;
+    /* 文字居中 */
+    cursor: pointer;
+    /* 手型光标 */
+    display: inline-flex;
+    /* 使内部图标和文字对齐 */
+    align-items: center;
+    /* 垂直居中 */
+    justify-content: center;
+    /* 水平居中 */
+    width: 100%;
+    /* 默认占满宽度，像一个大的点击区域 */
+    /* border-style: dashed; (可选：使用虚线边框强调其为文件拖放/选择区域) */
+}
+
+.fileInputLabel:hover {
+    background-color: var(--hover-bg-color);
+    /* 悬停背景 */
+}
+
+.fileInputNative {
+    /* 原生的 <input type="file"> 元素 */
+    display: none;
+    /* 将原生文件输入框隐藏，通过label触发其点击事件 */
+}
+
+.inputField {
+    /* 文本输入框 (标题、作者) */
+    composes: form-control from global;
+    /* 继承全局表单控件样式 */
+    /* width: 100%; (已由 .form-control 提供) */
+}
+
+.helpText {
+    /* 输入字段下方的辅助说明文字 */
+    display: block;
+    /* 独占一行 */
+    font-size: var(--font-size-xs);
+    /* 辅助文字更小 */
+    color: var(--color-muted);
+    /* 使用柔和颜色 */
+    margin-top: var(--spacing-xs);
+    /* 与输入框的间距 */
+    line-height: 1.4;
+    /* 行高 */
+    text-align: left;
+    /* 确保辅助文本左对齐 */
+}
+
+.submitButton {
+    /* 上传提交按钮 */
+    composes: btn btn-primary from global;
+    /* 继承全局主按钮样式 */
+    padding: var(--spacing-sm) var(--spacing-lg);
+    /* 确保内边距 */
+    font-size: var(--font-size-base);
+    /* 基础字体大小 */
+    display: inline-flex;
+    /* 使内部图标和文字对齐 */
+    align-items: center;
+    /* 垂直居中 */
+    justify-content: center;
+    /* 水平居中 */
+    gap: var(--spacing-sm);
+    /* 图标和文字之间的间距 */
+    width: 100%;
+    /* 按钮默认占满其容器宽度 (如果需要) */
+    /* 如果希望按钮不占满宽度，可以设置 width: auto; 或在父级中控制 */
+}
+
+/* .submitButton svg 的图标大小已在TSX中通过size属性控制 */
+/* .submitButton .spinning-icon (已在全局定义) */
+
+
+.messageContainer {
+    /* 用于显示上传成功或失败消息的容器 */
+    /* 继承全局 .success-message 或 .error-message 的背景色、文本颜色、边框等 */
+    /* 在TSX中通过 className={`${styles.messageContainer} success-message`} 组合使用 */
+    margin-top: var(--spacing-md);
+    /* 与上方按钮的间距 */
+    padding: var(--spacing-sm) var(--spacing-md);
+    /* 调整内边距 */
+    text-align: left;
+    /* 确保消息文本左对齐 */
+    /* display: flex; align-items: center; gap: var(--spacing-xs); (已由全局类提供) */
+}
+
+/* .messageContainer svg 的大小已在TSX中通过size属性控制 */

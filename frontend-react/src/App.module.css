@@ -1,0 +1,280 @@
+/* frontend-react/src/App.module.css */
+
+.appContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--background-color-body);
+}
+
+.appHeader {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--background-color-card);
+  border-bottom: 1px solid var(--border-color-divider);
+  box-shadow: var(--box-shadow-sm);
+  text-align: center;
+  flex-shrink: 0;
+  /* 新增：确保头部内容在需要时可以水平排列 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 新增：包裹标题和Logo的区域，用于左对齐 */
+.logoArea {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.appLogoIcon { /* 应用主标题旁的图标 */
+  color: var(--color-primary); /* 使用主色调 */
+  flex-shrink: 0;
+}
+
+.appName {
+  font-size: calc(var(--font-size-base) * 1.5); /* 应用名称字体大小 */
+  font-weight: var(--font-weight-bold);
+  color: var(--text-color-headings);
+  text-decoration: none; /* 如果是链接，移除下划线 */
+}
+/* 原有的 h1 样式可以移除或合并到 appName */
+
+
+/* 侧边栏切换按钮 */
+.sidebarToggleButton {
+  background: none;
+  border: none;
+  color: var(--text-color-headings);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  margin-right: var(--spacing-md); /* 与Logo区域的间距 */
+  display: inline-flex; /* 确保图标正确显示 */
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-circle);
+}
+.sidebarToggleButton:hover {
+  background-color: var(--hover-bg-color);
+}
+.sidebarToggleButton:focus-visible { /* 增强键盘导航焦点 */
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+
+/* 头部右侧操作区域 */
+.headerRightActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+.githubLink {
+  color: var(--text-color-headings);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-circle);
+}
+.githubLink:hover {
+  color: var(--color-primary);
+  background-color: var(--hover-bg-color);
+}
+
+
+/* --- 侧边栏布局 (新增/调整自App.tsx内部逻辑) --- */
+.appLayout {
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "sidebar main";
+  grid-template-rows: auto 1fr; /* 页头自适应高度，主内容区撑满 */
+  grid-template-columns: auto 1fr; /* 侧边栏自适应宽度，主内容区撑满 */
+  min-height: 100vh; /* 确保整个布局撑满视口高度 */
+}
+
+.appHeader {
+  grid-area: header;
+  /* 移除 text-align: center，因为内容通过flex对齐 */
+}
+
+.appSidebar {
+  grid-area: sidebar;
+  background-color: var(--background-color-card);
+  padding: var(--spacing-lg) var(--spacing-md);
+  border-right: 1px solid var(--border-color-divider);
+  transition: width 0.3s ease-in-out, padding 0.3s ease-in-out, opacity 0.3s ease;
+  overflow-x: hidden; /* 防止内容在折叠动画中溢出 */
+  box-shadow: var(--box-shadow-sm);
+  width: 250px; /* 侧边栏展开时的宽度 */
+}
+
+.appSidebar.closed {
+  width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
+  visibility: hidden; /* 确保在折叠时不可交互 */
+}
+
+.appSidebar nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.appSidebar nav li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.appSidebar .navLink { /* 侧边栏导航链接 */
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-base);
+  color: var(--text-color-paragraph);
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap; /* 防止文字换行，在折叠时配合 overflow: hidden */
+}
+
+.appSidebar .navLink:hover {
+  background-color: var(--hover-bg-color);
+  color: var(--color-primary);
+}
+
+/* 提高 .activeLink 的特异性，并移除 !important */
+.appSidebar nav ul li .navLink.activeLink,
+.appSidebar nav ul li .navLink.activeLink:hover {
+  background-color: var(--color-primary);
+  color: var(--text-color-light);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.appSidebar .navLink svg { /* 侧边栏导航图标 */
+  flex-shrink: 0;
+  color: var(--color-secondary); /* 默认图标颜色 */
+  transition: color 0.15s ease;
+}
+.appSidebar .navLink:hover svg {
+  color: var(--color-primary);
+}
+.appSidebar .navLink.activeLink svg {
+  color: var(--text-color-light); /* 活动状态图标颜色 */
+}
+
+.mainContent {
+  grid-area: main;
+  padding: var(--spacing-lg);
+  overflow-y: auto; /* 主内容区允许垂直滚动 */
+  background-color: var(--background-color-body);
+}
+
+/* 响应式调整侧边栏行为 */
+@media (max-width: 767px) {
+  .appLayout {
+    grid-template-areas:
+      "header"
+      "main";
+    grid-template-columns: 1fr; /* 单列布局 */
+  }
+
+  .appSidebar {
+    position: fixed; /* 小屏幕上侧边栏变为覆盖式 */
+    left: 0;
+    top: 0;
+    bottom: 0;
+    height: 100vh;
+    z-index: var(--z-index-sidebar, 1040); /* 确保在内容之上 */
+    transform: translateX(-100%); /* 默认隐藏在左侧 */
+    box-shadow: var(--box-shadow-lg); /* 覆盖时阴影更明显 */
+  }
+  .appSidebar.open {
+    transform: translateX(0); /* 打开时滑入 */
+    width: 260px; /* 固定宽度或百分比 */
+    padding-left: var(--spacing-md); /* 恢复padding */
+    padding-right: var(--spacing-md);
+    opacity: 1;
+    visibility: visible;
+  }
+  .appSidebar.closed { /* 确保关闭时样式正确 */
+    transform: translateX(-100%);
+    width: 260px; /* 保持宽度以便动画效果，但通过transform隐藏 */
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  /* 当侧边栏打开时，可以给主内容区添加一个遮罩层或推开效果（可选） */
+  .appLayout.sidebarOpenLayout .mainContent {
+    /* margin-left: 250px; (如果希望主内容被推开) */
+    /* filter: blur(2px) brightness(0.8); (如果希望主内容模糊变暗) */
+    /* 这需要JS配合切换 .sidebarOpenLayout 类到 .appLayout */
+  }
+}
+
+/* 移除旧的 .mainNav, .navLink, .navLinkActive, .navIcon 样式，因为它们现在是 .appSidebar 的一部分 */
+
+.appFooter {
+  text-align: center;
+  margin-top: auto; /* 将页脚推到底部 */
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--border-color-divider);
+  color: var(--color-muted);
+  background-color: var(--background-color-card);
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.footerTimeInfo {
+  display: block;
+  margin-top: var(--spacing-xs);
+  font-size: 0.9em;
+  color: var(--color-secondary);
+}
+
+
+.pageLoadingFallback { /* 页面懒加载时的Fallback样式 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 150px); /* 减去页头页脚大致高度 */
+    font-size: var(--font-size-lg);
+    color: var(--color-muted);
+    text-align: center;
+    gap: var(--spacing-md);
+}
+
+.pageLoadingFallback .spinning-icon {
+    composes: spinning-icon from global;
+}
+
+.notFoundPage { /* 404 页面样式 */
+  text-align: center;
+  padding: var(--spacing-xxl);
+  margin-top: var(--spacing-xl);
+  background-color: var(--background-color-card);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--box-shadow-base);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.notFoundPage h2 {
+  font-size: calc(var(--font-size-xl) * 1.5);
+  color: var(--color-danger);
+  margin-bottom: var(--spacing-md);
+}
+.notFoundPage p {
+  font-size: var(--font-size-lg);
+  color: var(--text-color-paragraph);
+  margin-bottom: var(--spacing-lg);
+}
+.notFoundPage .btn {
+  margin-top: var(--spacing-lg);
+}

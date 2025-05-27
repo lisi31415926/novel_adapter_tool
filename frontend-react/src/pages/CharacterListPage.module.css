@@ -1,0 +1,85 @@
+/* frontend-react/src/pages/CharacterListPage.module.css */
+
+/* 继承页面通用容器样式 */
+.characterListPageContainer {
+    /* composes: pageContainer from "./PageStyles.module.css"; */
+    /* 在TSX中通过 className={`${pageStyles.pageContainer} ${styles.characterListPageContainer || ''}`} 应用 */
+}
+
+/* 面包屑导航样式 (与 PageStyles.module.css 中的 breadcrumb 一致或可复用) */
+.breadcrumbNav {
+    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-sm);
+    color: var(--text-color-secondary); /* 使用CSS变量 */
+}
+.breadcrumbNav a {
+    color: var(--text-color-link); /* 使用CSS变量 */
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+}
+.breadcrumbNav a:hover {
+    text-decoration: underline;
+}
+.breadcrumbNav span { /* 用于分隔符和当前页面名称 */
+    margin: 0 var(--spacing-xs);
+}
+/* 可以用 AntD Breadcrumb 的 separator prop 代替手动添加分隔符 */
+
+/* 页面头部操作区域的样式 */
+.pageHeaderActions {
+    composes: pageHeader from "./PageStyles.module.css"; /* 继承通用页眉样式 */
+    /* 如果 CharacterListPage 的页眉有特定布局需求，可以在这里覆盖或添加 */
+}
+
+/* 初始加载或错误状态的容器 (如果页面级需要，通常由AntD Spin/Alert覆盖) */
+.loadingContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px; /* 确保在没有内容时也有一定高度 */
+    text-align: center;
+    gap: var(--spacing-md);
+    color: var(--text-color-secondary);
+}
+.loadingContainer .spinning-icon { /* 如果使用自定义旋转图标 */
+    /* composes: spinning-icon from global; */ /* 确保 spinning-icon 全局可用 */
+}
+
+
+/* 筛选控件区域的 Card 样式 (AntD Card 自带样式，这里可微调) */
+.filterControlsCardAntd {
+    margin-bottom: 16px; /* 与下方表格的间距 */
+    /* background-color: #fbfcfe; */ /* 可以设置一个非常淡的背景色以区分 */
+}
+
+/* 筛选表单的内联布局 (AntD Form layout="inline" 已处理大部分) */
+.filterFormAntd .ant-form-item {
+    margin-bottom: 8px !important; /* 减少内联表单项的下边距，使其更紧凑 */
+    margin-right: 12px !important; /* 调整右边距 */
+}
+.filterFormAntd .ant-form-item-label > label {
+    font-size: 13px; /* 筛选标签可以小一点 */
+    /* color: #555; */
+}
+.filterFormAntd .ant-select,
+.filterFormAntd .ant-input {
+    /* font-size: 13px; */ /* 输入框内字体大小 */
+}
+
+.noCharactersMessageAntd { /* AntD Empty 组件会处理空状态显示 */
+    /* text-align: center; */
+    /* padding: 40px 0; */
+    /* color: #888; */
+    /* font-style: italic; */
+}
+
+/* 模态框特定样式 (AntD Modal 自带良好样式，这里仅为可选微调) */
+/*
+.characterFormModal .ant-modal-body {
+  padding: 24px;
+}
+.characterFormModal .ant-form-item {
+  margin-bottom: 20px;
+}
+*/

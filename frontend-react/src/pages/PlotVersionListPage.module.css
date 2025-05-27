@@ -1,0 +1,222 @@
+/* frontend-react/src/pages/PlotVersionListPage.module.css */
+
+.versionListPageContainer {
+    /* General page container styles are inherited */
+}
+
+.pageHeaderNav { /* For the back link */
+    margin-bottom: var(--spacing-md);
+}
+.pageHeaderNav .btn { /* Style for the back button */
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+/* Styles for the header section of this page */
+.headerActions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+}
+.headerActions .btn { /* Common style for header buttons */
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.operationLoadingBar {
+    composes: info-message from global; /* Use info message style for loading bar */
+    background-color: var(--color-info-bg);
+    color: var(--color-info-text);
+    border-color: var(--color-info-border);
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    text-align: center;
+}
+
+.noVersionsMessage {
+    composes: no-data-message from global; /* Use global no-data style */
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-xl);
+}
+
+.versionList {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--spacing-lg);
+}
+
+.versionItem {
+    background-color: var(--background-color-card);
+    border: 1px solid var(--border-color-base);
+    border-left-width: 4px; /* For status indication */
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    box-shadow: var(--box-shadow-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Align items to the top for multi-line content */
+    gap: var(--spacing-md);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.versionItem:hover {
+    border-left-color: var(--color-primary);
+    box-shadow: var(--box-shadow-md);
+}
+
+/* Status-specific border colors */
+.statusDraft { border-left-color: var(--color-secondary); }
+.statusActive { border-left-color: var(--color-success); }
+.statusArchived { border-left-color: var(--color-muted); }
+.statusFinalized { border-left-color: var(--color-primary-dark); }
+
+
+.versionInfo {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    min-width: 0; /* Allow shrinking */
+}
+
+.versionNameAndStatus {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap; /* Allow tags to wrap */
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.versionName {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color-headings);
+    font-size: calc(var(--font-size-base) * 1.1);
+    word-break: break-word;
+}
+
+.versionStatusTag {
+    composes: tag-item from global;
+    font-size: 0.75em;
+    padding: 2px 6px;
+    text-transform: capitalize;
+}
+.statusTagDraft { background-color: var(--secondary-bg-color); color: var(--secondary-text-color); border-color: var(--border-color-divider); }
+.statusTagActive { background-color: var(--color-success-bg); color: var(--color-success-text); border-color: var(--color-success-border); }
+.statusTagArchived { background-color: var(--color-muted-lighter, #f0f0f0); color: var(--color-muted); border-color: var(--border-color-light); }
+.statusTagFinalized { background-color: var(--color-primary-lighter); color: var(--color-primary-dark); border-color: var(--color-primary-light); }
+
+
+.endingTag {
+    composes: tag-item from global;
+    font-size: 0.75em;
+    padding: 2px 6px;
+    background-color: var(--color-warning-bg);
+    color: var(--color-warning-text);
+    border-color: var(--color-warning-border);
+    font-weight: bold;
+}
+
+.versionDescription {
+    font-size: var(--font-size-sm);
+    color: var(--text-color-paragraph);
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.versionMeta {
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs) var(--spacing-md); /* row-gap column-gap */
+    margin-top: var(--spacing-xs);
+}
+.versionMeta span {
+    white-space: nowrap;
+}
+
+.versionActions {
+    display: flex;
+    flex-direction: column; /* Stack buttons vertically */
+    align-items: flex-end; /* Align buttons to the right */
+    gap: var(--spacing-xs);
+    flex-shrink: 0; /* Prevent shrinking */
+}
+.versionActions .btn {
+    min-width: 90px; /* Ensure buttons have some minimum width */
+    justify-content: flex-start; /* Align icon and text to the start */
+}
+
+/* Modal specific styles */
+.versionFormModalContent,
+.aiSuggestionModalContent {
+    max-width: 650px; /* Modal width */
+}
+
+.formRow { /* For status and is_ending on the same line */
+    display: flex;
+    gap: var(--spacing-lg);
+    align-items: flex-end; /* Align baselines or centers */
+}
+.formRow .formGroup {
+    flex: 1; /* Allow form groups to share space */
+    margin-bottom: 0; /* Remove bottom margin if parent has gap */
+}
+/* Checkbox alignment in formRow */
+.formRow .formGroup:has(input[type="checkbox"]) {
+    padding-bottom: 6px; /* Adjust based on input field height */
+}
+
+
+.contentSummaryPreview {
+    composes: codeBlock from global; /* Use codeBlock style for pre */
+    max-height: 100px;
+    overflow-y: auto;
+    font-size: var(--font-size-sm);
+    background-color: var(--background-color-input-disabled);
+    color: var(--text-color-paragraph);
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.aiModalDescription {
+    font-size: var(--font-size-sm);
+    color: var(--text-color-paragraph);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.6;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .versionItem {
+        flex-direction: column;
+        align-items: stretch; /* Make info and actions full width */
+    }
+    .versionActions {
+        flex-direction: row; /* Buttons side-by-side on small screens */
+        justify-content: flex-start; /* Align to start */
+        margin-top: var(--spacing-sm);
+        border-top: 1px solid var(--border-color-lightest);
+        padding-top: var(--spacing-sm);
+    }
+    .versionActions .btn {
+        flex-grow: 1; /* Allow buttons to share width */
+        justify-content: center;
+    }
+    .formRow {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        align-items: stretch;
+    }
+     .formRow .formGroup:has(input[type="checkbox"]) {
+        padding-top: 0;
+        padding-bottom: 0; /* Reset padding for checkbox group */
+    }
+}

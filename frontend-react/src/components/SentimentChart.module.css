@@ -1,0 +1,234 @@
+/* frontend-react/src/components/SentimentChart.module.css */
+
+.chartContainer {
+  /* 情感图表组件的根容器 */
+  width: 100%;
+  /* 默认占满父容器宽度 */
+  min-height: 380px;
+  /* 确保图表即使在数据少或加载时也有足够的高度 (300px用于图表，80px用于标题和边距) */
+  padding: var(--spacing-md);
+  /* 内边距 */
+  background-color: var(--background-color-card);
+  /* 卡片背景色 */
+  border: 1px solid var(--border-color-base);
+  /* 边框 */
+  border-radius: var(--border-radius-md);
+  /* 圆角 */
+  box-shadow: var(--box-shadow-sm);
+  /* 轻微阴影 */
+  display: flex;
+  /* 使用flex布局 */
+  flex-direction: column;
+  /* 使标题和图表垂直排列 */
+  /* 如果父组件 NovelOverview.module.css 中的 .analysisSection 已有背景和padding，
+     此处的背景和padding可能需要调整或移除，以避免双重样式。
+     当前假设 .chartContainer 是一个独立的卡片式组件。
+  */
+}
+
+.chartTitle {
+  /* 图表标题 "小说情感走势分析 - 《小说名》" */
+  font-size: var(--font-size-lg);
+  /* 标题字体大小 */
+  color: var(--text-color-headings);
+  /* 标题颜色 */
+  margin: 0 0 var(--spacing-lg) 0;
+  /* 移除上边距，设置下边距与图表分隔 */
+  padding-bottom: var(--spacing-sm);
+  /* 标题下内边距 */
+  border-bottom: 1px solid var(--border-color-divider);
+  /* 标题底部分割线 */
+  text-align: left;
+  /* 标题左对齐 */
+  font-weight: var(--font-weight-semibold);
+  /* 标题字重 */
+  display: flex;
+  /* 用于图标和文字对齐 */
+  align-items: center;
+  /* 垂直居中 */
+  flex-shrink: 0;
+  /* 防止标题在图表容器缩小时被压缩 */
+}
+
+.chartTitle svg {
+  /* 图标颜色可以与标题文字一致或使用主色 */
+  color: var(--color-primary);
+  /* 例如，使用主色调 */
+}
+
+
+/* --- 自定义 Recharts Tooltip 的样式 --- */
+.customTooltip {
+  /* Tooltip 的外层包裹容器 */
+  background-color: rgba(var(--background-color-tooltip-rgb, 30, 30, 30), 0.95);
+  /* 深色半透明背景 */
+  color: var(--text-color-tooltip, #f0f0f0);
+  /* 浅色文字，确保对比度 */
+  padding: var(--spacing-sm) var(--spacing-md);
+  /* 内边距 */
+  border-radius: var(--border-radius-base);
+  /* 圆角 */
+  border: 1px solid var(--border-color-tooltip, var(--color-primary-light));
+  /* 边框颜色，可使用主色调的浅色 */
+  box-shadow: var(--box-shadow-overlay);
+  /* 较强的阴影，使其浮动感更强 */
+  font-size: var(--font-size-sm);
+  /* Tooltip 内部文字大小 */
+  line-height: 1.5;
+  /* 行高 */
+  opacity: 0;
+  /* 初始透明，由Recharts控制显示时的透明度 */
+  transition: opacity 0.2s ease-in-out;
+  /* 平滑的淡入淡出效果 */
+  max-width: 300px;
+  /* 限制Tooltip最大宽度，防止过长内容撑开 */
+  pointer-events: none;
+  /* 确保Tooltip本身不响应鼠标事件，避免干扰图表交互 */
+}
+
+/* 当Recharts显示Tooltip时，会改变其opacity，上述transition会生效 */
+
+.tooltipTitle {
+  /* Tooltip 中的章节标题 */
+  font-weight: var(--font-weight-semibold);
+  /* 标题加粗 */
+  color: var(--text-color-tooltip-header, #ffffff);
+  /* 标题文字颜色（通常更亮） */
+  margin: 0 0 var(--spacing-xs) 0;
+  /* 与下方得分的间距 */
+  padding-bottom: var(--spacing-xs);
+  /* 标题下内边距 */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  /* 标题下细分隔线 */
+  word-break: break-word;
+  /* 允许长标题换行 */
+}
+
+.tooltipScore {
+  /* Tooltip 中的情感得分行 */
+  margin: var(--spacing-xs) 0;
+  /* 上下间距 */
+  color: var(--text-color-tooltip-value, #e0e0e0);
+  /* 得分值颜色 */
+  display: flex;
+  /* 用于情感标签和图标对齐 */
+  align-items: center;
+  /* 垂直居中 */
+  gap: var(--spacing-xs);
+  /* 标签和图标之间的间距 */
+}
+
+.tooltipScore strong {
+  /* 得分数值本身 */
+  font-weight: var(--font-weight-bold);
+  /* 得分值加粗 */
+  /* 具体颜色由情感标签类定义 */
+}
+
+/* Tooltip 中情感标签的颜色 (与 ChapterList 中的情感徽章颜色保持一致或协调) */
+.sentimentPositive {
+  color: var(--color-success);
+}
+
+.sentimentNegative {
+  color: var(--color-danger);
+}
+
+.sentimentNeutral {
+  color: var(--color-secondary);
+}
+
+/* 中性可以用次要色或信息色 */
+.sentimentUnknown,
+/* 未知或无效得分 (如果Tooltip显示这类情况) */
+.tooltipScore:not(.sentimentPositive):not(.sentimentNegative):not(.sentimentNeutral) strong {
+  /* 默认/回退颜色 */
+  color: var(--text-color-tooltip-value, #e0e0e0);
+  /* 如果没有特定情感类，得分值颜色 */
+}
+
+.tooltipExtraInfo {
+  /* Tooltip 中的额外信息，如章节索引 */
+  font-size: 0.9em;
+  /* 额外信息字体稍小 */
+  color: var(--color-muted-light, #b0b0b0);
+  /* 使用更柔和的浅灰色 */
+  margin-top: var(--spacing-xs);
+}
+
+
+/* --- 加载、空数据、错误状态提示样式 --- */
+/* 这些状态下的提示信息通常在图表容器内部居中显示 */
+.loadingState,
+.noDataState,
+.errorState {
+  /* 通用状态容器样式 */
+  composes: status-message-overlay from global;
+  /* 继承全局的居中覆盖消息样式 */
+  /* 全局 .status-message-overlay 应该已包含 flex, align-items, justify-content, text-align, padding等 */
+  /* 如果需要特定于此组件的微调，可以在这里添加 */
+  flex-grow: 1;
+  /* 使状态消息容器能撑满图表区域的剩余高度 */
+  font-size: var(--font-size-base);
+  /* 基础字体大小 */
+  color: var(--color-muted);
+  /* 默认使用柔和颜色 */
+  /* background-color: rgba(var(--background-color-card-rgb), 0.5); (可选：给状态消息一个半透明背景以区分图表区域) */
+}
+
+.loadingState svg,
+/* 加载图标 */
+.noDataState svg,
+/* 无数据图标 */
+.errorState svg {
+  /* 错误图标 */
+  margin-right: var(--spacing-sm);
+  /* 图标与文字的间距 */
+  flex-shrink: 0;
+  /* 防止图标被压缩 */
+}
+
+.loadingState {
+  /* 加载状态特定样式 */
+  /* 颜色通常由全局 .loading-message 控制 */
+}
+
+.spinning-icon {
+  /* 确保旋转动画类名正确 */
+  composes: spinning-icon from global;
+}
+
+.noDataState {
+  /* 无数据状态特定样式 */
+  color: var(--text-color-placeholder, var(--color-muted));
+  /* 使用占位符文本颜色 */
+}
+
+.noDataState svg {
+  color: var(--text-color-placeholder, var(--color-muted));
+  /* 图标颜色与文本一致 */
+}
+
+.errorState {
+  /* 错误状态特定样式 */
+  color: var(--color-danger-text, var(--color-danger));
+  /* 使用危险色系文本颜色 */
+  /* background-color: var(--color-danger-bg); (如果希望错误状态有背景) */
+}
+
+.errorState svg {
+  color: var(--color-danger);
+  /* 错误图标使用危险色 */
+}
+
+/* Recharts 生成的 SVG 元素的字体通常会继承父容器，
+   但如果需要精确控制图表内部文本（如轴标签、图例）的字体，
+   可以通过 Recharts 组件的 props (例如 tick={{ fontFamily: 'var(--font-family-sans-serif)' }})
+   或者更全局地针对 .recharts-wrapper 或 .recharts-surface 下的 text 元素设置。
+   例如:
+   .chartContainer :global(.recharts-text.recharts-cartesian-axis-tick-value) {
+       font-family: var(--font-family-sans-serif);
+       fill: var(--color-muted) !important; (使用 !important 覆盖 Recharts 内联样式，需谨慎)
+   }
+   但优先通过 Recharts 的 props 进行样式配置。
+*/

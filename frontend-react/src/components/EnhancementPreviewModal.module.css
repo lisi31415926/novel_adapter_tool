@@ -1,0 +1,169 @@
+/* frontend-react/src/components/EnhancementPreviewModal.module.css */
+
+.previewModalContent {
+    width: 80vw;
+    max-width: 1000px;
+    min-height: 450px; /* 稍微增加最小高度以容纳差异视图和可能的并排视图 */
+    display: flex;
+    flex-direction: column;
+}
+
+.previewModalBody {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden; 
+}
+
+.modalHelpText {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--color-background-alt);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--color-border-subtle);
+}
+
+/* Diff View Styles */
+.diffContainer {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    background-color: var(--color-background);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    min-height: 150px; /* 给差异视图一个最小高度 */
+    max-height: 30vh; /* 限制差异视图的最大高度，使其可滚动 */
+    overflow-y: auto; /* 差异内容过长时滚动 */
+}
+
+.diffContainer h5 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-heading);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-md);
+    border-bottom: 1px solid var(--color-border-subtle);
+    padding-bottom: var(--spacing-xs);
+}
+
+.diffContentPreview {
+    white-space: pre-wrap; 
+    word-break: break-word; 
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+    background-color: var(--color-background-alt);
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--color-border-faint);
+}
+
+.diffAdded {
+    background-color: var(--color-success-background-subtle); /* 淡绿色背景 */
+    color: var(--color-success-text);
+    text-decoration: none; /* 移除可能的默认下划线 */
+    padding: 0.1em 0; /* 细微调整，避免过于突兀 */
+    border-radius: 2px;
+}
+
+.diffRemoved {
+    background-color: var(--color-danger-background-subtle); /* 淡红色背景 */
+    color: var(--color-danger-text);
+    text-decoration: line-through; /* 删除线 */
+    padding: 0.1em 0;
+    border-radius: 2px;
+}
+
+.diffCommon {
+    /* 相同部分通常不需要特殊样式，但可以定义以备将来使用 */
+    /* background-color: transparent; */
+}
+
+
+/* Side-by-side view (now optional and within a <details> tag) */
+.sideBySideToggle {
+    margin-top: var(--spacing-md);
+    font-size: var(--font-size-sm);
+}
+.sideBySideToggle summary {
+    cursor: pointer;
+    color: var(--color-text-link);
+    padding: var(--spacing-xs) 0;
+}
+.sideBySideToggle summary:hover {
+    text-decoration: underline;
+}
+
+
+.previewComparisonContainer {
+    display: flex;
+    flex-direction: row;
+    gap: var(--spacing-lg);
+    /* max-height: 25vh;  如果并排视图内容很多，可能也需要限制高度和滚动 */
+    /* overflow-y: auto; */
+    margin-top: var(--spacing-sm);
+}
+
+.textBlock {
+    flex: 1;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    background-color: var(--color-background);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.textBlock h5 {
+    margin-top: 0;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-heading);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-md);
+    border-bottom: 1px solid var(--color-border-subtle);
+    padding-bottom: var(--spacing-xs);
+}
+
+.textContentPreview {
+    flex-grow: 1;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+    background-color: var(--color-background-alt);
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--color-border-faint);
+    min-height: 100px; /* 稍微减小并排视图中每个块的最小高度 */
+    max-height: 20vh; /* 限制高度，使其可滚动 */
+}
+
+@media (max-width: 768px) {
+    .previewModalContent {
+        width: 95vw;
+        max-height: 85vh; 
+    }
+    .previewModalBody {
+        overflow-y: auto; 
+    }
+    .diffContainer {
+        max-height: 35vh; /* 移动端稍微增加diff视图最大高度 */
+    }
+    .previewComparisonContainer {
+        flex-direction: column;
+    }
+    .textBlock {
+        margin-bottom: var(--spacing-md);
+    }
+    .textContentPreview {
+        max-height: 150px; 
+    }
+}

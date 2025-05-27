@@ -1,0 +1,80 @@
+/* frontend-react/src/components/configuration/GlobalLLMSettingsForm.module.css */
+/* (复用 SharedSettingsForm.module.css 中的 .formContainer, .formGrid, .formField, .helpText, .requiredStar, etc.) */
+/* 您可以将 SharedSettingsForm.module.css 的内容复制到这里，或者从那里导入 */
+@import './SharedSettingsForm.module.css'; /* 假设可以这样导入共享样式 */
+
+.fullWidthField {
+    grid-column: 1 / -1; /* 确保在网格布局中占满整行 */
+}
+
+.subSection {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #f0f0f0; /* Antd 分割线颜色 */
+    grid-column: 1 / -1; /* 子区域默认占满整行 */
+}
+
+.subSectionTitle {
+    font-size: 1.15em;
+    color: rgba(0, 0, 0, 0.88); /* Antd 标题颜色 */
+    margin-bottom: 16px;
+    font-weight: 500;
+}
+
+.dynamicRow { /* 用于 Form.List 中的每一行 */
+    display: flex;
+    align-items: flex-start; /* 使 help text 能正确显示在下方 */
+    gap: 8px; /* 减小间距 */
+    margin-bottom: 12px; /* 减小行间距 */
+    padding: 12px;
+    border: 1px solid #f0f0f0;
+    border-radius: 6px; /* Antd Card 圆角 */
+    background-color: #fafafa;
+}
+.dynamicRow .ant-form-item { /* 移除 Form.List 内部 Form.Item 的默认下边距 */
+    margin-bottom: 0 !important;
+}
+
+
+.dynamicFieldItem { /* Form.Item 的包装，用于控制宽度 */
+    flex-grow: 1;
+}
+.dynamicFieldItem .ant-select { /*确保Select占满 */
+    width: 100%;
+}
+
+
+.keyInput { /* 用于别名或任务类型的输入/选择 */
+    /* flex-grow: 1; */ /* 由Form.Item控制 */
+}
+
+.valueSelect { /* 用于模型ID或别名的选择 */
+    /* flex-grow: 2; */ /* 由Form.Item控制 */
+}
+
+.separator {
+    font-weight: normal;
+    color: #555;
+    padding-top: 8px; /* 与 Antd Input 对齐 */
+    margin: 0 8px;
+}
+
+.deleteButton { /* 复用 SharedSettingsForm.module.css 或在此定义 */
+    background: none;
+    border: none;
+    color: #ff4d4f; /* Antd 危险色 */
+    cursor: pointer;
+    padding: 0;
+    font-size: 16px; /* Antd 图标大小 */
+    line-height: 32px; /* 与输入框高度对齐 */
+    transition: color 0.3s;
+}
+.deleteButton:hover {
+    color: #cf1322; /* Antd 危险色深色 */
+}
+
+.addButtonDynamic { /* 用于 Form.List 的添加按钮 */
+    margin-top: 8px;
+    width: 100%; /* 占满整行或根据需要调整 */
+    border-style: dashed;
+}

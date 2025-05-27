@@ -1,0 +1,256 @@
+/* frontend-react/src/components/CharacterRelationshipList.module.css */
+
+.listContainer {
+    background-color: var(--background-color-card);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color-base);
+    box-shadow: var(--box-shadow-sm);
+    margin-top: var(--spacing-lg);
+}
+
+.loadingState,
+.noDataState {
+    composes: status-message-overlay from global;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    padding: var(--spacing-xl) var(--spacing-md);
+    min-height: 150px;
+    font-size: var(--font-size-base);
+}
+
+.loadingState .spinning-icon {
+    composes: spinning-icon from global;
+}
+
+.listTitle {
+    font-size: var(--font-size-lg);
+    color: var(--text-color-headings);
+    margin-top: 0;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color-divider);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-weight: var(--font-weight-semibold);
+}
+
+.titleIcon {
+    color: var(--color-accent-purple); /* 人物关系列表标题图标用紫色系 */
+}
+
+.relationshipList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr; /* 人物关系信息通常较详细，单列显示 */
+    gap: var(--spacing-md);
+}
+
+.relationshipItem {
+    background-color: var(--background-color-body);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
+    box-shadow: var(--box-shadow-sm);
+    transition: box-shadow 0.15s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+/* 根据关系类型应用不同的左边框颜色 */
+.relationshipItem.typeFamily { border-left: 4px solid var(--color-info); }
+.relationshipItem.typeFriendship { border-left: 4px solid var(--color-success); }
+.relationshipItem.typeRomance { border-left: 4px solid var(--color-danger-light, #ff79c6); } /* 粉色系代表爱情 */
+.relationshipItem.typeAntagonistic { border-left: 4px solid var(--color-danger); }
+.relationshipItem.typeAlliance { border-left: 4px solid var(--color-primary); }
+.relationshipItem.typeMentorship { border-left: 4px solid var(--color-secondary-dark); }
+.relationshipItem.typeProfessional { border-left: 4px solid var(--color-secondary); }
+.relationshipItem.typeOther { border-left: 4px solid var(--color-muted); }
+
+
+.relationshipHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* 改为 center 以便单行时标签垂直居中 */
+    gap: var(--spacing-md);
+    flex-wrap: wrap; /* 允许在空间不足时换行 */
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px dotted var(--border-color-lightest);
+}
+
+.characterPair {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color-headings);
+    font-size: calc(var(--font-size-base) * 1.05);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-grow: 1; /* 允许角色对占据更多空间 */
+    word-break: break-word; /* 允许长角色名换行 */
+}
+.characterPair strong {
+    color: var(--text-color-link); /* 角色名称可以用链接色，未来可点击 */
+}
+.characterPair strong:hover {
+    text-decoration: underline;
+    cursor: pointer; /* 暗示可点击 */
+}
+
+.relationLinkIcon {
+    color: var(--color-muted);
+    margin: 0 var(--spacing-xs);
+    flex-shrink: 0;
+}
+
+.relationshipTypeTag {
+    composes: tag-item from global;
+    font-size: 0.85em; /* 标签字体 */
+    padding: 3px 8px;  /* 标签内边距 */
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: inline-flex; /* 使图标和文字对齐 */
+    align-items: center;
+    gap: var(--spacing-xs);
+    border-width: 1px;
+    border-style: solid;
+    text-transform: capitalize;
+}
+/* 为关系类型标签应用动态颜色 */
+.typeFamily { background-color: var(--color-info-lighter); color: var(--color-info-dark); border-color: var(--color-info-light); }
+.typeFriendship { background-color: var(--color-success-lighter); color: var(--color-success-dark); border-color: var(--color-success-light); }
+.typeRomance { background-color: #ffe4e1; color: #d13035; border-color: #f5b7b1; } /* 示例：粉色系 */
+.typeAntagonistic { background-color: var(--color-danger-lighter); color: var(--color-danger-dark); border-color: var(--color-danger-light); }
+.typeAlliance { background-color: var(--color-primary-lighter); color: var(--color-primary-dark); border-color: var(--color-primary-light); }
+.typeMentorship { background-color: #e8daef; color: #5b2c6f; border-color: #d2b4de; } /* 示例：紫色系 */
+.typeProfessional { background-color: #e5e7e9; color: #424949; border-color: #d5dbdb; } /* 示例：灰色系 */
+.typeOther { background-color: var(--secondary-bg-color); color: var(--secondary-text-color); border-color: var(--border-color-divider); }
+
+.typeIcon { /* 关系类型标签内的图标 */
+    opacity: 0.8;
+    margin-right: 2px; /* 与文字的微小间距 */
+}
+
+
+.relationshipDescription {
+    font-size: var(--font-size-sm);
+    color: var(--text-color-paragraph);
+    line-height: 1.5;
+    margin: 0;
+    padding-left: var(--spacing-xs); /* 轻微缩进 */
+    font-style: italic;
+    color: var(--color-muted);
+}
+.relationshipDescription strong {
+    color: var(--secondary-text-color);
+    font-weight: var(--font-weight-medium);
+    font-style: normal;
+}
+
+.relationshipMetaGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    padding-top: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    border-top: 1px dotted var(--border-color-lightest);
+}
+
+.metaItem {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    line-height: 1.3;
+    word-break: break-word;
+}
+.metaItem svg {
+    color: var(--color-muted);
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    opacity: 0.8;
+}
+.metaItem strong { /* "起始章节:" 这样的标签 */
+    font-weight: var(--font-weight-normal); /* 不用太粗 */
+    color: var(--secondary-text-color);
+    margin-right: 2px;
+}
+.metaItem span { /* 实际的章节号等值 */
+    color: var(--text-color-base);
+}
+
+.dynamicChangesSection {
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin-top: var(--spacing-xs);
+    padding-top: var(--spacing-xs);
+    border-top: 1px dotted var(--border-color-lightest);
+    line-height: 1.4;
+}
+.dynamicChangesSection strong {
+    font-weight: var(--font-weight-medium);
+    color: var(--secondary-text-color);
+    margin-right: var(--spacing-xs);
+}
+.dynamicChangesSection span {
+    font-style: italic;
+    color: var(--text-color-paragraph);
+}
+.dynamicChangesSection .metaIcon { /* 复用 .metaItem svg 的样式 */
+    color: var(--color-secondary);
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    opacity: 0.8;
+    margin-right: var(--spacing-xs);
+    vertical-align: middle;
+}
+
+
+.relationshipActions {
+    margin-top: auto;
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--border-color-lightest);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+}
+
+.actionButton {
+    composes: btn btn-xs from global;
+    padding: 3px 8px;
+}
+.actionButton svg {
+    margin-right: 3px;
+}
+
+/* 响应式调整 */
+@media (max-width: 767px) {
+    .relationshipMetaGrid {
+        grid-template-columns: 1fr; /* 小屏幕上元数据单列显示 */
+    }
+    .characterPair {
+        font-size: var(--font-size-base); /* 调整名称大小 */
+        flex-direction: column; /* 角色对在小屏幕上垂直堆叠 */
+        align-items: flex-start;
+        gap: 2px;
+    }
+    .relationLinkIcon {
+        display: none; /* 小屏幕上可以隐藏中间的连接图标 */
+    }
+    .relationshipTypeTag {
+        margin-left: 0; /* 小屏幕上类型标签不自动推到右侧 */
+        margin-top: var(--spacing-xs);
+        align-self: flex-start; /* 确保左对齐 */
+    }
+    .relationshipHeader {
+        align-items: flex-start; /* 确保头部元素顶部对齐 */
+    }
+}

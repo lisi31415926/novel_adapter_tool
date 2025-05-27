@@ -1,0 +1,25 @@
+/* frontend-react/src/pages/RuleTemplateEditorPage.module.css */
+
+.editorPageContainer {
+    /* 如果需要，可以为编辑页面的主内容区添加特定样式 */
+    max-width: 1000px; /* 例如，限制最大宽度，使其在宽屏上更易读 */
+    margin: 0 auto;    /* 居中显示 */
+  }
+  
+  .formCard {
+    margin-bottom: 24px; /* 卡片之间的间距 */
+  }
+  
+  .formCard :global(.ant-card-head-title) {
+    font-size: 16px; /* 统一卡片标题大小 */
+    font-weight: 500;
+  }
+  
+  .formActions {
+    margin-top: 24px;
+    text-align: right; /* 按钮靠右对齐 */
+  }
+  
+  .formActions button {
+    margin-left: 8px; /* 按钮之间的间距 */
+  }

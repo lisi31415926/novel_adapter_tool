@@ -1,0 +1,92 @@
+/* frontend-react/src/components/configuration/LLMProvidersGlobalSettings.module.css */
+.providersContainer {
+    margin-bottom: 20px;
+}
+
+.noProvidersMessage {
+    font-style: italic;
+    color: #777;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+}
+
+.providerPanel .ant-collapse-content-box { /* Antd Collapse Panel 内容区padding */
+    padding: 16px 20px !important;
+}
+
+.panelHeader {
+    font-weight: 500;
+    font-size: 1.05em;
+    color: #333;
+}
+
+.providerForm {
+    /* antd Form 默认有自己的布局，这里可以添加一些微调 */
+}
+
+.formGrid { /* 可以从 SharedSettingsForm.module.css 继承或复制 */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px 20px;
+}
+
+.formItemAntd {
+    margin-bottom: 12px !important; /* 调整Antd Form Item的默认间距 */
+}
+
+.formField { /* 如果不使用 Antd Form.Item，则使用此自定义样式 */
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+}
+.formField label {
+    font-weight: 500;
+    margin-bottom: 6px;
+    font-size: 0.9em;
+    color: #333740;
+}
+.formField input[type="text"],
+.formField input[type="number"],
+.formField select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #d9d9d9; /* Antd 边框颜色 */
+    border-radius: 4px; /* Antd 圆角 */
+    font-size: 14px; /* Antd 字体大小 */
+    transition: all 0.3s;
+}
+.formField input:focus,
+.formField select:focus {
+    border-color: #40a9ff; /* Antd 焦点颜色 */
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    outline: 0;
+}
+.formField input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.helpText {
+    font-size: 12px; /* Antd 辅助文本大小 */
+    color: rgba(0, 0, 0, 0.45); /* Antd 辅助文本颜色 */
+    margin-top: 4px;
+}
+
+.fullWidthField {
+    grid-column: 1 / -1;
+}
+
+.infoTextReadOnly {
+    font-size: 13px;
+    color: #555;
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    grid-column: 1 / -1; /* 占满整行 */
+}
+.infoTextReadOnly .ant-tag {
+    margin-left: 8px;
+}
+
+.statusEnabled, .statusDisabled { /* 移除，使用 Antd Tag */ }

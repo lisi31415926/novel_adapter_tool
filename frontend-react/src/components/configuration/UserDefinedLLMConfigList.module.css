@@ -1,0 +1,221 @@
+/* frontend-react/src/components/configuration/UserDefinedLLMConfigList.module.css */
+.listContainer {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+}
+
+.listHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.listTitle {
+    font-size: 1.3em;
+    color: #333;
+    margin: 0;
+}
+
+.addButton {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.addButton:hover {
+    background-color: #0056b3;
+}
+
+.emptyMessage {
+    text-align: center;
+    color: #777;
+    padding: 20px;
+    font-style: italic;
+}
+
+.tableWrapper {
+    overflow-x: auto; /* 允许表格水平滚动，以适应小屏幕 */
+}
+
+.configTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.configTable th,
+.configTable td {
+    border: 1px solid #ddd;
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.configTable th {
+    background-color: #f0f0f0;
+    font-weight: 600;
+    color: #333;
+}
+
+.configTable tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.configTable tr:hover {
+    background-color: #f1f1f1;
+}
+
+.disabledRow {
+    background-color: #fefefe !important; /* 覆盖 hover */
+    color: #aaa;
+}
+
+.disabledRow td {
+    color: #aaa; /* 确保禁用行的文本也变灰 */
+}
+
+
+.idCell {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.notesCell {
+    max-width: 200px; /* 限制备注列的最大宽度 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: default; /* 提示用户可以hover查看完整内容 */
+}
+
+.actionsCell {
+    text-align: center;
+    white-space: nowrap; /* 防止按钮换行 */
+}
+
+.actionButton {
+    background: none;
+    border: 1px solid transparent; /* 保持尺寸一致性 */
+    padding: 6px 10px;
+    margin: 0 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.editButton {
+    color: #007bff;
+    border-color: #007bff;
+}
+.editButton:hover {
+    background-color: #007bff;
+    color: white;
+}
+
+.testButton {
+    color: #28a745;
+    border-color: #28a745;
+}
+.testButton:hover {
+    background-color: #28a745;
+    color: white;
+}
+.testButton:disabled {
+    color: #999;
+    border-color: #ccc;
+    cursor: not-allowed;
+}
+
+.deleteButton {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+.deleteButton:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.testResultCell {
+    font-size: 0.85em;
+    text-align: center;
+}
+.testingInProgress {
+    color: #ffc107; /* 黄色 */
+    font-style: italic;
+}
+.testSuccess {
+    color: #28a745; /* 绿色 */
+    font-weight: bold;
+}
+.testFailure {
+    color: #dc3545; /* 红色 */
+    font-weight: bold;
+}
+.notTested {
+    color: #6c757d; /* 灰色 */
+    font-style: italic;
+}
+.testResultCell span svg { /* 图标样式 */
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+
+.statusEnabled svg {
+    color: #28a745;
+    margin-right: 4px;
+}
+.statusDisabled svg {
+    color: #dc3545;
+    margin-right: 4px;
+}
+
+
+/* 模态框样式 */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: flex-start; /* 从顶部开始对齐，允许滚动 */
+    justify-content: center;
+    z-index: 1050; /* 确保在其他内容之上 */
+    padding-top: 5vh; /* 距离顶部一些空间 */
+    padding-bottom: 5vh;
+    overflow-y: auto; /* 如果内容过长，允许模态框本身滚动 */
+}
+
+.modalContentWrapper {
+    background-color: #fff; /* 将背景移到包装器，以便表单有自己的背景 */
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    width: 90%;
+    max-width: 700px; /* 模态框最大宽度 */
+    /* 实际表单组件 (.modalFormContainer) 的内边距等由其自身CSS控制 */
+    /* 这个包装器主要负责定位和模态框的整体形状 */
+    max-height: 90vh; /* 限制最大高度 */
+    overflow-y: auto; /* 允许表单内容滚动 */
+}

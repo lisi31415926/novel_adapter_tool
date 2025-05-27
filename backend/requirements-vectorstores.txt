@@ -1,0 +1,17 @@
+# backend/requirements-vectorstores.txt
+
+# --- Vector Store Clients ---
+qdrant-client>=1.9.0,<1.10.0 # Qdrant 客户端
+# faiss-cpu # 或 faiss-gpu，如果使用FAISS且不由langchain间接安装
+# chromadb # 如果使用ChromaDB
+
+# --- Embeddings & Langchain Specifics ---
+# langchain-community # 许多langchain集成依赖于此，可能已通过核心langchain安装
+langchain-huggingface>=0.0.3,<0.1.0 # 如果使用HuggingFace嵌入
+# sentence-transformers>=2.0.0,<4.0.0 # huggingface/embeddings 底层依赖，通常自动安装
+# torch>=2.0.0 # sentence-transformers 通常需要 PyTorch (CPU或GPU版本)
+# transformers>=4.30.0 # sentence-transformers 通常需要
+
+# --- Core ML/Numeric Libraries (部分库可能已作为其他依赖项安装) ---
+numpy>=1.26.0,<1.27.0
+scikit-learn>=1.5.0,<1.6.0

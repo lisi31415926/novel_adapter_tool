@@ -1,0 +1,194 @@
+/* frontend-react/src/pages/NovelDetailPage.module.css */
+
+.novelDetailPageContainer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.breadcrumbNav {
+    font-size: var(--font-size-sm);
+    color: var(--secondary-text-color);
+    margin-bottom: var(--spacing-md); 
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px dotted var(--border-color-dotted-divider);
+    display: flex; 
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+}
+.breadcrumbNav a { color: var(--text-color-link); text-decoration: none; font-weight: var(--font-weight-medium); }
+.breadcrumbNav a:hover { text-decoration: underline; }
+.breadcrumbNav span { font-weight: var(--font-weight-semibold); color: var(--text-color-headings); }
+.breadcrumbNav > *:not(:last-child)::after { content: "/"; margin: 0 var(--spacing-sm); color: var(--color-muted); font-weight: var(--font-weight-normal); }
+
+.headerActions {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+.headerActions .btn { /* Shared button style for header actions */
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.tabs {
+    display: flex;
+    gap: var(--spacing-xs); /* Small gap between tabs */
+    border-bottom: 2px solid var(--border-color-base); /* Underline for the tab bar */
+    margin-bottom: var(--spacing-lg);
+    overflow-x: auto; /* Allow horizontal scrolling for tabs on small screens */
+    padding-bottom: var(--spacing-xs); /* Space for active indicator */
+}
+
+.tabButton {
+    composes: btn from global; /* Use global button styles as a base */
+    background-color: transparent;
+    color: var(--text-color-secondary); /* Default tab text color */
+    border: none;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 3px solid transparent; /* For active indicator */
+    border-radius: var(--border-radius-base) var(--border-radius-base) 0 0; /* Rounded top corners */
+    font-weight: var(--font-weight-medium);
+    transition: all 0.2s ease-in-out;
+    flex-shrink: 0; /* Prevent tabs from shrinking too much */
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.tabButton:hover, .tabButton:focus {
+    color: var(--color-primary); /* Text color on hover/focus */
+    background-color: var(--background-color-hover-light); /* Light background on hover */
+}
+
+.activeTab {
+    color: var(--color-primary-dark); /* Active tab text color */
+    border-bottom-color: var(--color-primary); /* Active indicator line */
+    font-weight: var(--font-weight-bold);
+    background-color: var(--background-color-card); /* Slightly different bg for active tab */
+}
+
+.tabContent {
+    background-color: var(--background-color-body); /* Ensure content area matches body or is distinct */
+    padding: var(--spacing-xs); /* Small padding around tab content if needed */
+}
+
+.overviewSection {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl); /* Increased gap between overview subsections */
+}
+
+.subSectionTitle { /* Common style for titles within overview tab */
+    font-size: var(--font-size-lg);
+    color: var(--text-color-headings);
+    font-weight: var(--font-weight-semibold);
+    margin-top: 0; /* Reset default margin if any */
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color-divider);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+.subSectionTitle svg {
+    color: var(--color-primary); /* Consistent icon color */
+}
+
+/* --- 新增：主要剧情冲突区域样式 --- */
+.mainPlotConflictsSection {
+    background-color: var(--background-color-card);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color-base);
+    box-shadow: var(--box-shadow-sm);
+}
+
+.mainConflictList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.mainConflictItem {
+    background-color: var(--secondary-bg-color); /* Slightly different bg for each item */
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    border-left: 4px solid var(--color-secondary); /* Accent border */
+}
+
+.conflictLevelBadge {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    border-radius: var(--border-radius-pill);
+    color: var(--text-color-light);
+    text-transform: uppercase;
+    margin-bottom: var(--spacing-xs);
+}
+.conflictLevelBadge[data-level="major"] { background-color: var(--color-danger); }
+.conflictLevelBadge[data-level="minor"] { background-color: var(--color-warning); color: var(--text-color-dark); }
+.conflictLevelBadge[data-level="character_internal"] { background-color: var(--color-info); }
+.conflictLevelBadge[data-level="未知"], 
+.conflictLevelBadge:not([data-level]) { background-color: var(--color-muted); }
+
+
+.conflictDescription {
+    font-size: var(--font-size-base);
+    color: var(--text-color-paragraph);
+    line-height: 1.6;
+    margin: 0 0 var(--spacing-xs) 0;
+}
+.conflictNote {
+    font-size: var(--font-size-xs);
+    color: var(--secondary-text-color);
+    font-style: italic;
+}
+
+/* --- 新增：角色关系图谱入口区域样式 --- */
+.relationshipGraphEntrySection {
+    background-color: var(--background-color-card);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color-base);
+    box-shadow: var(--box-shadow-sm);
+    margin-top: var(--spacing-xl); /* Ensure it's distinct if .overviewSection has no gap */
+}
+
+.entrySectionDescription {
+    font-size: var(--font-size-base);
+    color: var(--text-color-paragraph);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.6;
+}
+/* Button styles are inherited from global .btn and .btn-outline-primary */
+
+
+.loadingContainer { /* For full page loading */
+    composes: pageContainer from "./PageStyles.module.css";
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    text-align: center;
+    gap: var(--spacing-md);
+}
+.pageErrorContainer { composes: loadingContainer; }
+
+
+@media (max-width: 768px) {
+    .headerActions {
+        flex-direction: column;
+        align-items: flex-start; /* Align buttons to the left on small screens */
+        width: 100%;
+    }
+    .headerActions .btn { width: 100%; justify-content: center; }
+    .tabs { padding-bottom: 0; } /* Remove bottom padding for tabs if they wrap */
+}

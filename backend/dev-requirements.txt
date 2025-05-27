@@ -1,0 +1,15 @@
+# backend/dev-requirements.txt
+
+# --- Testing ---
+pytest>=7.0.0,<8.0.0
+httpx>=0.25.0,<0.26.0 # FastAPI 测试客户端
+
+# --- Code Quality & Formatting ---
+black>=23.0.0,<24.0.0
+flake8>=6.0.0,<7.0.0
+mypy>=1.0.0,<2.0.0
+isort>=5.0.0,<6.0.0
+
+# --- Debugging & Profiling (Optional) ---
+# ipython
+#pdbpp

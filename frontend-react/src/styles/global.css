@@ -1,0 +1,491 @@
+/* frontend-react/src/styles/global.css */
+/* 定义应用的全局样式、CSS变量和可复用的工具类 */
+
+/* --- CSS 变量定义 --- */
+:root {
+  /* 字体系统 */
+  --font-family-sans-serif: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-family-monospace: SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-family-serif: 'Georgia', 'Times New Roman', serif; /* 新增：衬线字体 */
+  --font-size-base: 1rem; /* 16px */
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-lg: 1.25rem; /* 20px */
+  --font-size-xl: 1.5rem; /* 24px */
+  --font-size-xxl: 2rem; /* 32px */
+
+  --line-height-base: 1.6; /* 调整：增加基础行高 */
+  --line-height-tight: 1.3;
+  --line-height-normal: 1.5; /* 新增：通用正常行高 */
+
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* 主色调 */
+  --color-primary: #007bff;
+  --color-primary-dark: #0056b3;
+  --color-primary-darker: #003d82;
+  --color-primary-light: #58a6ff;
+  --color-primary-lighter: #e6f2ff; /* 调整：比 #cce5ff 更淡一点，用于更细微背景 */
+  --color-primary-lighter-transparent: rgba(0, 123, 255, 0.08); /* 新增 */
+  --color-primary-rgb: 0, 123, 255;
+  --color-primary-contrast: #ffffff; /* 新增：主色上的对比文字颜色 */
+
+  /* 次要色调 */
+  --color-secondary: #6c757d;
+  --color-secondary-dark: #545b62;
+  --color-secondary-light: #adb5bd;
+  --color-secondary-lighter: #e9ecef;
+  --color-secondary-rgb: 108, 117, 125;
+
+  /* 状态色 */
+  --color-success: #28a745;
+  --color-success-dark: #198754; /* 调整：Bootstrap 5的深绿色 */
+  --color-success-light: #71dd8a;
+  --color-success-lighter: #d1e7dd; /* Bootstrap 5的浅绿色背景 */
+  --color-success-rgb: 40, 167, 69;
+  --color-success-bg: var(--color-success-lighter); /* 统一使用变量 */
+  --color-success-text: #0a3622; /* Bootstrap 5的成功文本色 */
+  --color-success-border: #a3cfbb; /* Bootstrap 5的成功边框色 */
+  --color-success-background-subtle: #eaf7ec; /* 新增：更淡的成功背景 */
+  --color-success-text-strong: var(--color-success-dark); /* 新增 */
+
+
+  --color-info: #0dcaf0; /* 调整：Bootstrap 5的青色 */
+  --color-info-dark: #0aa3c2;
+  --color-info-light: #67d9f3;
+  --color-info-lighter: #cff4fc; /* Bootstrap 5的浅青色背景 */
+  --color-info-rgb: 13, 202, 240;
+  --color-info-bg: var(--color-info-lighter);
+  --color-info-text: #055160; /* Bootstrap 5的信息文本色 */
+  --color-info-border: #9eeaf9; /* Bootstrap 5的信息边框色 */
+  --color-info-background-subtle: #e6f7fa; /* 新增 */
+  --color-info-text-strong: var(--color-info-dark); /* 新增 */
+
+
+  --color-warning: #ffc107;
+  --color-warning-dark: #ff9800; /* 调整：更深的橙黄色 */
+  --color-warning-light: #ffd560;
+  --color-warning-lighter: #fff3cd;
+  --color-warning-rgb: 255, 193, 7;
+  --color-warning-bg: var(--color-warning-lighter);
+  --color-warning-text: #664d03;
+  --color-warning-border: #ffe69c;
+  --color-warning-background-subtle: #fff9e6; /* 新增 */
+  --color-warning-text-strong: var(--color-warning-dark); /* 新增 */
+
+
+  --color-danger: #dc3545;
+  --color-danger-dark: #bb2d3b; /* 调整：Bootstrap 5的深红色 */
+  --color-danger-light: #f0717d;
+  --color-danger-lighter: #f8d7da;
+  --color-danger-rgb: 220, 53, 69;
+  --color-danger-bg: var(--color-danger-lighter);
+  --color-danger-text: #58151c;
+  --color-danger-border: #f1aeb5;
+  --color-danger-background-subtle: #feebee; /* 新增 */
+  --color-danger-text-strong: var(--color-danger-dark); /* 新增 */
+
+  /* 文本与背景 */
+  --text-color-base: #212529;
+  --text-color-headings: #182848;
+  --text-color-paragraph: #495057;
+  --text-color-secondary: #6c757d;  /* 已定义 */
+  --text-color-muted: #868e96;       /* 调整：更柔和的灰色 */
+  --text-color-light: #ffffff;
+  --text-color-on-dark: #f8f9fa;
+  --text-color-link: var(--color-primary);
+  --text-color-link-hover: var(--color-primary-dark);
+  --text-color-placeholder: #adb5bd;
+  --text-color-icon: #777; /* 新增：通用图标颜色 */
+  /* 新增：用于表单输入框的文本颜色 */
+  --input-text-color: var(--text-color-base);
+  /* 新增：辅助性的深色柔和文本，用于如章节索引等 */
+  --color-muted-dark: #495057; /* 例如，设为与段落文本相同或略深 */
+  /* 新增：用于图标的颜色 */
+  --color-icon-muted: var(--color-muted);
+  --color-icon-action: var(--color-primary);
+  --color-icon-action-hover: var(--color-primary-dark);
+  /* 新增：用于星级评分的颜色 */
+  --color-star-filled: var(--color-warning); /* 例如用警示黄色 */
+  --color-star-empty: var(--border-color-base); /* 例如用基础边框色 */
+  /* 新增：强调元素的背景、文本和边框色 */
+  --color-accent-bg-subtle: var(--color-info-lighter); /* 基于信息色的浅色 */
+  --color-accent-text-strong: var(--color-info-dark);  /* 基于信息色的深色 */
+  --color-accent-border: var(--color-info-light);      /* 基于信息色的边框 */
+
+
+  --background-color-body: #f4f6f9;      /* 调整：极浅灰色 - 页面主背景 */
+  --background-color-card: #ffffff;
+  --background-color-card-rgb: 255, 255, 255;
+  --background-color-card-alt: #f8f9fc; /* 新增：卡片内或卡片间的备选浅色背景 */
+  --background-color-input: #ffffff;
+  --background-color-input-disabled: #e9ecef;
+  --background-color-hover-light: rgba(var(--color-primary-rgb), 0.08); /* 新增 */
+  --secondary-bg-color: #eef2f7;      /* 之前用作卡片头部等，可作为区块的次级背景 */
+  --hover-bg-color: #e0e7ef;           /* 之前列表项悬停色 */
+  --disabled-bg-color: var(--background-color-input-disabled); /* 统一 */
+  --code-bg-color: #f1f3f5;           /* 调整：代码块背景 */
+  --code-bg-color-rgb: 241, 243, 245;
+  --background-color-code-inline: #e9ecef; /* 新增 */
+  --background-color-code-block: #f8f9fa; /* 新增 */
+  /* 新增：用于比 body 更细微的背景层次 */
+  --background-color-body-subtle: #f8f9fa; /* 与代码块背景一致，或更浅 */
+
+
+  /* 边框与分割线 */
+  --border-color-base: #dee2e6;
+  --border-color-light: #e9ecef;
+  --border-color-lightest: #f1f3f5;
+  --border-color-input: #ced4da;
+  --border-color-input-hover: #adb5bd; /* 新增 */
+  --border-color-divider: var(--border-color-light);
+  --border-color-dotted-divider: #ced4da;
+  --border-color-axis: #d1d5db;       /* 调整：图表轴线 */
+  --border-color-grid: #e5e7eb;        /* 调整：图表网格线 */
+  --border-color-subtle: #e9ecef; /* 已定义 */
+  --border-color-faint: #f1f3f5;  /* 已定义 */
+  /* 新增：用于输入框聚焦时的阴影 */
+  --input-focus-box-shadow: 0 0 0 0.25rem rgba(var(--color-primary-rgb), 0.25);
+
+
+  /* Tooltip */
+  --background-color-tooltip-rgb: 48, 48, 48; /* 保持深色背景 */
+  --text-color-tooltip: #f0f0f0;
+  --text-color-tooltip-header: #ffffff;
+  --text-color-tooltip-value: #e0e0e0;
+  --border-color-tooltip: var(--color-primary-light); /* 边框颜色可协调 */
+  --color-muted-light: #b0b0b0; /* 用于Tooltip内部的次要文本 */
+
+  /* 间距 */
+  --spacing-xxs: 0.125rem; /* 2px (新增) */
+  --spacing-xs: 0.25rem;  /* 4px */
+  --spacing-sm: 0.5rem;   /* 8px */
+  --spacing-md: 1rem;     /* 16px */
+  --spacing-lg: 1.5rem;   /* 24px */
+  --spacing-xl: 2rem;     /* 32px */
+  --spacing-xxl: 3rem;    /* 48px */
+
+  /* 边框圆角 */
+  --border-radius-xs: 0.125rem; /* 2px (新增) */
+  --border-radius-sm: 0.2rem;   /* ~3px */
+  --border-radius-base: 0.3rem; /* 调整：略微增大基础圆角 (约4.8px) */
+  --border-radius-md: 0.4rem; /* 调整 (约6.4px) */
+  --border-radius-lg: 0.6rem;   /* 调整 (约9.6px) */
+  --border-radius-xl: 0.8rem;  /* 调整 (约12.8px) */
+  --border-radius-pill: 50rem;
+  --border-radius-circle: 50%;
+
+  /* 阴影 */
+  --box-shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03); /* 调整：更柔和 */
+  --box-shadow-base: 0 3px 6px rgba(0,0,0,0.06), 0 3px 6px rgba(0,0,0,0.03); /* 调整 */
+  --box-shadow-md: 0 6px 12px rgba(0,0,0,0.07), 0 3px 6px rgba(0,0,0,0.04); /* 调整 */
+  --box-shadow-lg: 0 10px 20px rgba(0,0,0,0.08), 0 6px 6px rgba(0,0,0,0.05); /* 调整 */
+  --box-shadow-overlay: 0 12px 32px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05); /* 调整：用于模态框等 */
+  --box-shadow-light: 0 2px 4px rgba(0,0,0,0.04); /* 新增：更轻微的阴影 */
+
+
+  /* 禁用状态 */
+  --disabled-opacity: 0.65;
+
+  /* Z-indexes (新增/调整) */
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-sidebar: 1035; /* 确保侧边栏在某些情况下低于模态框背景 */
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1080; /* Tooltip通常需要较高层级 */
+  --z-index-toast: 1090;
+  --z-index-fullscreen: 1100; /* 用于面板全屏 */
+  --z-index-overlay: 50; /* 通用覆盖层，如status-message-overlay */
+
+
+  /* 其他通用变量 */
+  --navbar-height: 60px; /* 估算的导航栏高度 */
+  --input-small-min-width: 100px; /* 调整 */
+  --input-small-max-width: 180px; /* 调整 */
+  --input-cost-width: 90px;       /* 新增 */
+  --label-min-width: 100px;       /* 新增 */
+  --label-small-min-width: 140px; /* 新增 */
+  --label-cost-min-width: 100px;  /* 新增 */
+
+  /* 强调色 (Accent Colors) - 新增 */
+  --color-accent-purple: #6f42c1;
+  --color-accent-pink: #d63384; /* Bootstrap pink */
+  --color-accent-orange: #fd7e14;
+  --color-accent-teal: #20c997;
+  --color-accent-cyan: #0dcaf0;
+  --color-accent-lime: #a7c957;
+  --color-accent-indigo: #6610f2; /* Bootstrap indigo */
+  --color-accent-blue: var(--color-primary); /* 可以直接用主色 */
+
+  /* 文本高亮颜色 (新增) */
+  --highlight-bg-color: var(--color-warning-lighter); /* 例如：浅黄色 */
+  --highlight-text-color: var(--color-warning-text); /* 确保对比度 */
+}
+
+
+/* --- 基础HTML元素 --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  scroll-behavior: smooth; /* 平滑滚动 */
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family-sans-serif);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--text-color-base);
+  background-color: var(--background-color-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root { /* 使根React节点撑满 body */
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+
+a {
+  color: var(--text-color-link);
+  text-decoration: none; /* 默认移除下划线 */
+  background-color: transparent;
+  transition: color 0.15s ease-in-out, text-decoration-color 0.15s ease;
+}
+
+a:hover {
+  color: var(--text-color-link-hover);
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary-light);
+}
+
+a:focus-visible { /* 键盘焦点样式 */
+  outline: 2px solid var(--color-primary-light);
+  outline-offset: 2px;
+  border-radius: var(--border-radius-sm);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--text-color-headings);
+}
+
+h1 { font-size: var(--font-size-xxl); }
+h2 { font-size: var(--font-size-xl); }
+h3 { font-size: var(--font-size-lg); }
+h4 { font-size: calc(var(--font-size-base) * 1.15); }
+
+p {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  color: var(--text-color-paragraph);
+}
+
+hr {
+  margin: var(--spacing-lg) 0;
+  border: 0;
+  border-top: 1px solid var(--border-color-divider);
+}
+
+code { /* 内联代码样式 */
+  font-family: var(--font-family-monospace);
+  font-size: 0.875em;
+  color: var(--color-accent-pink); /* 强调色 */
+  background-color: var(--background-color-code-inline);
+  padding: 0.15em 0.4em; /* 微调padding */
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color-light);
+}
+pre code { /* 代码块内的code标签不应有额外背景和padding */
+  background-color: transparent;
+  padding: 0;
+  border: none;
+  color: inherit; /* 继承pre的颜色 */
+  font-size: inherit; /* 继承pre的字体大小 */
+}
+
+/* --- 工具类/组件样式 --- */
+
+/* 按钮基础样式 */
+.btn {
+  display: inline-block;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-color-base);
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  background-color: transparent;
+  border: 1px solid transparent;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal); /* 使用 normal 行高 */
+  border-radius: var(--border-radius-base);
+  transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out, transform 0.1s ease-out;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn:hover { text-decoration: none; transform: translateY(-1px); box-shadow: var(--box-shadow-sm); }
+.btn:active { transform: translateY(0px); box-shadow: none; }
+.btn:focus-visible { outline: 0; box-shadow: 0 0 0 0.25rem rgba(var(--color-primary-rgb), 0.35); }
+.btn[disabled], .btn.disabled { opacity: var(--disabled-opacity); cursor: not-allowed; box-shadow: none; transform: none; }
+
+/* 主按钮 */
+.btn-primary {
+  color: var(--color-primary-contrast);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.btn-primary:hover { background-color: var(--color-primary-dark); border-color: var(--color-primary-dark); color: var(--color-primary-contrast); }
+.btn-primary:focus-visible, .btn-primary.focus { box-shadow: 0 0 0 0.25rem rgba(var(--color-primary-rgb), 0.5); }
+.btn-primary[disabled], .btn-primary.disabled { background-color: var(--color-primary); border-color: var(--color-primary); }
+
+/* 次要轮廓按钮 */
+.btn-outline-secondary {
+  color: var(--color-secondary-dark);
+  border-color: var(--color-secondary-light);
+}
+.btn-outline-secondary:hover { color: var(--text-color-light); background-color: var(--color-secondary); border-color: var(--color-secondary); }
+
+/* 更多按钮类型 (success, danger, info, warning - 实心和轮廓) */
+.btn-success { color: var(--text-color-light); background-color: var(--color-success); border-color: var(--color-success); }
+.btn-success:hover { background-color: var(--color-success-dark); border-color: var(--color-success-dark); }
+.btn-danger { color: var(--text-color-light); background-color: var(--color-danger); border-color: var(--color-danger); }
+.btn-danger:hover { background-color: var(--color-danger-dark); border-color: var(--color-danger-dark); }
+/* ... (为 info, warning 等添加类似样式) ... */
+
+/* 按钮尺寸 */
+.btn-sm { padding: calc(var(--spacing-xs) * 1.8) var(--spacing-sm); font-size: var(--font-size-sm); line-height: var(--line-height-tight); border-radius: var(--border-radius-sm); }
+.btn-xs { padding: var(--spacing-xs) calc(var(--spacing-xs) * 1.8); font-size: var(--font-size-xs); line-height: 1.3; border-radius: var(--border-radius-xs); }
+
+/* 图标按钮 */
+.btn-icon { padding: var(--spacing-xs); line-height: 1; width: auto; height: auto; display: inline-flex; align-items: center; justify-content: center; }
+.btn-icon.btn-sm { padding: calc(var(--spacing-xs) * 0.9); }
+.btn-icon.btn-xs { padding: calc(var(--spacing-xs) * 0.7); }
+
+
+/* 表单控件 */
+.form-control {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-base);
+  color: var(--input-text-color);
+  background-color: var(--background-color-input);
+  background-clip: padding-box;
+  border: 1px solid var(--border-color-input);
+  appearance: none;
+  border-radius: var(--border-radius-base);
+  transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+.form-control:focus { background-color: var(--background-color-input); border-color: var(--color-primary-light); outline: 0; box-shadow: var(--input-focus-box-shadow); }
+.form-control::placeholder { color: var(--text-color-placeholder); opacity: 1; }
+.form-control[disabled], .form-control[readonly] { background-color: var(--background-color-input-disabled); opacity: var(--disabled-opacity); cursor: not-allowed; }
+.form-control.form-control-sm { height: calc(1.5em + var(--spacing-sm) * 2 + 2px); padding: var(--spacing-xs) var(--spacing-sm); font-size: var(--font-size-sm); border-radius: var(--border-radius-sm); }
+
+/* 表单组 */
+.form-group { margin-bottom: var(--spacing-md); }
+.form-group label { display: inline-block; margin-bottom: var(--spacing-sm); font-weight: var(--font-weight-medium); }
+
+/* 消息提示框 (已包含在您提供的版本中，这里是基于更新后变量的调整) */
+.info-message, .success-message, .warning-message, .error-message {
+  padding: var(--spacing-md); margin-bottom: var(--spacing-lg); border: 1px solid transparent;
+  border-radius: var(--border-radius-base); font-size: var(--font-size-base); /* 改为基础字号 */
+  display: flex; align-items: flex-start; gap: var(--spacing-sm); line-height: 1.5;
+}
+.info-message { color: var(--color-info-text-strong); background-color: var(--color-info-background-subtle); border-color: var(--color-info-light); }
+.success-message { color: var(--color-success-text-strong); background-color: var(--color-success-background-subtle); border-color: var(--color-success-light); }
+.warning-message { color: var(--color-warning-text-strong); background-color: var(--color-warning-background-subtle); border-color: var(--color-warning-light); }
+.error-message { color: var(--color-danger-text-strong); background-color: var(--color-danger-background-subtle); border-color: var(--color-danger-light); }
+.info-message svg, .success-message svg, .warning-message svg, .error-message svg { flex-shrink: 0; margin-top: 3px; /* 微调对齐 */ }
+
+
+/* 标签/徽章 */
+.tag-item {
+  display: inline-block; padding: var(--spacing-xs) var(--spacing-sm); font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium); line-height: 1.3; /* 调整 */ text-align: center;
+  white-space: nowrap; vertical-align: baseline; border-radius: var(--border-radius-pill);
+  color: var(--text-color-light); background-color: var(--color-secondary);
+  border: 1px solid transparent; margin: 2px;
+}
+
+/* 代码块 */
+.codeBlock {
+  display: block; padding: var(--spacing-md); margin: 0 0 var(--spacing-md) 0;
+  font-size: var(--font-size-sm); color: var(--text-color-base);
+  word-wrap: break-word; white-space: pre-wrap;
+  background-color: var(--background-color-code-block);
+  border: 1px solid var(--border-color-light); border-radius: var(--border-radius-base);
+  font-family: var(--font-family-monospace); line-height: 1.5; /* 调整 */ overflow-x: auto;
+}
+
+/* 加载与状态提示 */
+.loading-message {
+  composes: info-message; color: var(--text-color-paragraph); background-color: transparent;
+  border-color: transparent; justify-content: center; align-items: center !important; text-align: center;
+}
+.spinning-icon { animation: spin 1.2s linear infinite; /* 调整速度 */ }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.no-data-message {
+  composes: info-message; color: var(--color-muted); font-style: italic;
+  background-color: transparent; border: 1px dashed var(--border-color-light);
+  justify-content: center; align-items: center !important; text-align: center;
+}
+.status-message-overlay {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex;
+  flex-direction: column; align-items: center; justify-content: center;
+  background-color: rgba(var(--background-color-card-rgb), 0.9); /* 调整透明度 */
+  z-index: var(--z-index-overlay); padding: var(--spacing-lg); text-align: center;
+  gap: var(--spacing-md); border-radius: var(--border-radius-md);
+}
+
+/* Tooltip */
+.tooltip { position: relative; display: inline-block; }
+.tooltip:hover::after {
+  content: attr(title); position: absolute; bottom: 100%; /* 改为上方显示 */ left: 50%;
+  transform: translateX(-50%); background-color: rgba(var(--background-color-tooltip-rgb), 0.95); /* 调整透明度 */
+  color: var(--text-color-tooltip); padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-base); /* 调整圆角 */ font-size: var(--font-size-xs);
+  white-space: nowrap; z-index: var(--z-index-tooltip); margin-bottom: var(--spacing-xs); /* 与元素的间距 */
+  box-shadow: var(--box-shadow-sm); /* 添加轻微阴影 */
+  opacity: 0; /* 初始透明，用于动画 */
+  animation: fadeInTooltip 0.2s 0.1s ease-out forwards; /* 延迟显示 */
+}
+@keyframes fadeInTooltip { to { opacity: 1; } }
+
+
+/* --- 响应式设计 --- */
+@media (max-width: 768px) {
+  .btn { padding: calc(var(--spacing-xs) * 1.8) var(--spacing-sm); font-size: var(--font-size-sm); }
+  .btn-sm { padding: var(--spacing-xs) calc(var(--spacing-xs) * 1.5); font-size: var(--font-size-xs); }
+  .form-control { padding: var(--spacing-sm) var(--spacing-md); font-size: var(--font-size-base); } /* 移动端输入框保持基础大小 */
+  .form-group { margin-bottom: var(--spacing-md); } /* 保持间距 */
+  h1 { font-size: var(--font-size-xl); }
+  h2 { font-size: var(--font-size-lg); }
+  h3 { font-size: calc(var(--font-size-base) * 1.15); }
+}

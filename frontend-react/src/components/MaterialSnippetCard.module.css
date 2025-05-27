@@ -1,0 +1,348 @@
+/* frontend-react/src/components/MaterialSnippetCard.module.css */
+
+.snippetCard {
+    background-color: var(--background-color-card);
+    border: 1px solid var(--border-color-base);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-sm);
+    display: flex;
+    flex-direction: column;
+    /* 确保内部元素垂直排列 */
+    gap: var(--spacing-xs);
+    /* 卡片内主要区域之间的间距 */
+    box-shadow: var(--box-shadow-sm);
+    transition: box-shadow 0.2s ease-in-out, transform 0.1s ease-out, opacity 0.2s ease;
+    position: relative;
+    /* 用于拖拽时的 z-index 和可能的绝对定位子元素 */
+    /* touch-action: none; */
+    /* 如果整个卡片都可拖拽，则需要，但我们用手柄 */
+}
+
+.snippetCard:hover {
+    box-shadow: var(--box-shadow-md);
+}
+
+/* 当卡片被拖拽时的样式 (由 isDragging 状态触发) */
+.dragging {
+    box-shadow: var(--box-shadow-lg) !important;
+    /* 更明显的阴影 */
+    opacity: 0.85 !important;
+    /* 拖拽时半透明，由JS动态设置，但可在此处设默认 */
+    /* z-index: 1000 !important;  <-- zIndex 通常由 JS 动态设置以确保在最上层 */
+    /* cursor: grabbing !important; <-- 浏览器通常会自动处理拖拽手势 */
+    border: 1px dashed var(--color-primary);
+    /* 给被拖拽的卡片一个特殊边框 */
+}
+
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    /* 将来源描述和操作按钮推向两端 */
+    align-items: center;
+    /* 垂直居中对齐头部内容 */
+    gap: var(--spacing-sm);
+    /* 头部内部元素间距 */
+    border-bottom: 1px solid var(--border-color-lightest);
+    /* 头部与内容的分隔线 */
+    padding-bottom: var(--spacing-xs);
+    /* 头部下内边距 */
+    min-height: 28px;
+    /* 确保头部有一定高度，即使内容很少 */
+}
+
+.sourceAndDrag {
+    /* 包裹拖拽手柄和来源描述 */
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    /* 手柄和来源描述之间的间距 */
+    flex-grow: 1;
+    /* 占据可用空间，将右侧按钮推到右边 */
+    overflow: hidden;
+    /* 防止来源描述过长时撑开布局 */
+}
+
+.dragHandleMaterial {
+    cursor: grab;
+    /* 明确可抓取手势 */
+    color: var(--color-muted);
+    padding: var(--spacing-xs);
+    /* 为手柄提供点击区域 */
+    margin-left: -6px;
+    /* 视觉上调整手柄位置，使其更贴近卡片左边缘 */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius-circle);
+    /* 圆形手柄背景（如果需要） */
+    transition: background-color 0.2s ease, color 0.2s ease;
+    touch-action: none;
+    /* 优化触摸设备上的拖拽，防止页面滚动 */
+}
+
+.dragHandleMaterial:hover {
+    background-color: var(--hover-bg-color);
+    /* 悬停时背景变化 */
+    color: var(--text-color-base);
+}
+
+.dragging .dragHandleMaterial,
+/* 当卡片正在被拖拽时手柄的样式 */
+.dragHandleMaterial:active {
+    /* 当手柄被按下时 (抓取状态) */
+    cursor: grabbing;
+    color: var(--color-primary);
+    /* 激活时颜色变化 */
+}
+
+.sourceDescription {
+    font-size: var(--font-size-sm);
+    color: var(--secondary-text-color);
+    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+    /* 防止来源描述换行 */
+    overflow: hidden;
+    /* 超出部分隐藏 */
+    text-overflow: ellipsis;
+    /* 超出部分用省略号显示 */
+    flex-shrink: 1;
+    /* 允许在空间不足时被压缩，优先于按钮 */
+}
+
+.snippetType {
+    /* 素材类型的小字提示 */
+    margin-left: var(--spacing-xs);
+    font-size: 0.8em;
+    color: var(--disabled-text-color);
+    /* 使用较浅的颜色 */
+    font-weight: var(--font-weight-normal);
+}
+
+.cardActions {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-shrink: 0;
+    /* 防止操作按钮组被压缩 */
+}
+
+.actionButton {
+    composes: btn btn-xs btn-icon from global;
+    /* 继承全局超小号图标按钮样式 */
+    background-color: transparent;
+    /* 通常图标按钮是透明背景 */
+    color: var(--color-muted);
+    border: none;
+    /* 移除边框 */
+}
+
+.actionButton:hover {
+    color: var(--text-color-base);
+    background-color: var(--hover-bg-color);
+    /* 悬停时背景 */
+}
+
+.deleteButton:hover {
+    /* 删除按钮的特定悬停效果 */
+    color: var(--color-danger-text);
+    background-color: var(--color-danger-lighter);
+}
+
+.contentPreview {
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+    color: var(--text-color-paragraph);
+    white-space: pre-wrap;
+    /* 保留换行和空格 */
+    word-break: break-word;
+    /* 允许长单词或URL换行 */
+    max-height: 100px;
+    /* 预览时限制最大高度 */
+    overflow: hidden;
+    /* 超出部分隐藏 */
+    cursor: pointer;
+    /* 提示用户可以点击展开/折叠 */
+    padding: var(--spacing-xs) 0;
+    /* 上下内边距 */
+    position: relative;
+    /* 为了绝对定位切换按钮 */
+    transition: max-height 0.3s ease-in-out;
+    /* 为展开/折叠添加平滑过渡 */
+}
+
+.contentPreview[aria-expanded="true"] {
+    /* 内容展开时的样式 */
+    max-height: 400px;
+    /* 展开时允许更大的最大高度 */
+    overflow-y: auto;
+    /* 如果内容仍然超出，则显示滚动条 */
+}
+
+.contentPreview:hover {
+    background-color: var(--background-color-body-subtle);
+    /* 轻微背景提示可交互 */
+}
+
+.togglePreviewIndicator {
+    /* 展开/折叠指示器图标的容器 */
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    padding: 2px;
+    background-color: rgba(var(--background-color-card-rgb), 0.7);
+    /* 半透明背景，避免完全遮挡文字 */
+    border-radius: var(--border-radius-sm) 0 0 0;
+    /* 左上角圆角 */
+    line-height: 1;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.contentPreview:hover .togglePreviewIndicator,
+.contentPreview:focus .togglePreviewIndicator {
+    /* 预览区域悬停或聚焦时，指示器更明显 */
+    opacity: 1;
+}
+
+.togglePreviewIndicator svg {
+    /* 指示器图标的旋转 */
+    transition: transform 0.3s ease-in-out;
+}
+
+/* 当 aria-expanded 为 true 时，图标的旋转已在 TSX 中通过 style prop 处理，这里无需重复 */
+
+
+.cardFooter {
+    display: flex;
+    justify-content: space-between;
+    /* 标签区和时间戳推向两端 */
+    align-items: center;
+    /* 垂直居中对齐 */
+    gap: var(--spacing-sm);
+    /* 元素间距 */
+    padding-top: var(--spacing-xs);
+    /* 与上方内容的分隔 */
+    border-top: 1px solid var(--border-color-lightest);
+    /* 顶部分隔线 */
+    font-size: var(--font-size-xs);
+    /* 页脚字体较小 */
+}
+
+.tagsDisplay {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    /* 标签之间的间距 */
+    flex-wrap: wrap;
+    /* 允许标签换行 */
+    flex-grow: 1;
+    /* 占据可用空间 */
+    overflow: hidden;
+    /* 防止标签过多时撑开 */
+    min-width: 0;
+    /* 允许 flex item 收缩 */
+}
+
+.tagsIcon {
+    color: var(--color-accent-blue);
+    /* 标签图标颜色 */
+    margin-right: 2px;
+    /* 图标与第一个标签或“无标签”文本的间距 */
+    flex-shrink: 0;
+}
+
+.tagItem {
+    background-color: var(--secondary-bg-color);
+    color: var(--secondary-text-color);
+    padding: 2px var(--spacing-xs);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color-light);
+    font-size: 0.9em;
+    /* 标签字体略小于页脚默认字体 */
+    white-space: nowrap;
+    /* 标签本身不换行 */
+    overflow: hidden;
+    /* 标签过长时截断 */
+    text-overflow: ellipsis;
+    /* 标签过长时用省略号 */
+    max-width: 100px;
+    /* 限制单个标签的最大宽度 */
+}
+
+.noTagsText {
+    color: var(--color-muted);
+    font-style: italic;
+}
+
+.editTagsButton {
+    /* 编辑标签按钮的特定样式 */
+    margin-left: var(--spacing-xs);
+    /* 与最后一个标签或“无标签”文本的间距 */
+    /* 其他样式继承自 .actionButton */
+}
+
+.tagsEditForm {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-grow: 1;
+    /* 占据可用空间 */
+    min-width: 0;
+    /* 允许 flex item 收缩 */
+}
+
+.tagsInput {
+    composes: form-control from global;
+    /* 继承全局表单控件样式 */
+    font-size: var(--font-size-xs);
+    /* 与页脚字体大小一致 */
+    padding: 2px var(--spacing-xs);
+    /* 调整内边距使其更紧凑 */
+    height: auto;
+    /* 覆盖全局可能设置的固定高度 */
+    line-height: 1.2;
+    /* 调整行高 */
+    flex-grow: 1;
+    /* 输入框占据表单内大部分空间 */
+    min-width: 100px;
+    /* 避免输入框过窄 */
+    background-color: var(--background-color-input);
+    /* 确保背景色与主题一致 */
+}
+
+.tagActionButton {
+    composes: btn btn-xs btn-icon from global;
+    /* 继承全局超小号图标按钮样式 */
+    background: none;
+    /* 通常标签操作按钮背景透明 */
+    border: none;
+    /* 无边框 */
+    padding: 2px;
+    /* 紧凑的内边距 */
+}
+
+.tagSaveButton {
+    color: var(--color-success);
+}
+
+.tagSaveButton:hover {
+    background-color: var(--color-success-lighter);
+}
+
+.tagCancelButton {
+    color: var(--color-muted);
+}
+
+.tagCancelButton:hover {
+    background-color: var(--hover-bg-color);
+}
+
+.timestamp {
+    color: var(--color-muted);
+    white-space: nowrap;
+    /* 时间戳不换行 */
+    flex-shrink: 0;
+    /* 防止时间戳在空间不足时被压缩 */
+    margin-left: var(--spacing-sm);
+    /* 与左侧元素的间距，如果标签区很长 */
+}

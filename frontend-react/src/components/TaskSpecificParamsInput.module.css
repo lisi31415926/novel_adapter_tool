@@ -1,0 +1,291 @@
+/* frontend-react/src/components/TaskSpecificParamsInput.module.css */
+
+.paramsContainer {
+    margin-top: var(--spacing-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.paramsSectionDetails {
+    border: 1px solid var(--border-color-divider);
+    border-radius: var(--border-radius-md);
+    background-color: var(--background-color-body);
+    overflow: hidden;
+}
+
+.sectionSummary {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color-headings);
+    background-color: var(--secondary-bg-color);
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background-color 0.15s ease;
+    outline: none;
+}
+.sectionSummary::-webkit-details-marker { display: none; }
+.sectionSummary::marker { display: none; }
+
+
+.sectionSummary:hover { background-color: var(--hover-bg-color); }
+
+.summaryIcon {
+    margin-right: var(--spacing-sm);
+    color: var(--color-primary);
+    flex-shrink: 0;
+}
+
+.summaryChevron {
+    color: var(--color-muted);
+    transition: transform 0.2s ease-in-out;
+    flex-shrink: 0;
+}
+
+.paramsSectionDetails[open] > .sectionSummary .summaryChevron {
+    transform: rotate(180deg);
+}
+
+.sectionContent {
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--border-color-divider);
+}
+.paramsSectionDetails:not([open]) .sectionContent {
+    display: none;
+}
+
+
+.formGroup {
+    margin-bottom: var(--spacing-md);
+}
+.formGroup:last-child { margin-bottom: 0; }
+
+.formGroup label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    font-size: 0.9em;
+    color: var(--text-color-paragraph);
+    font-weight: var(--font-weight-medium);
+    display: inline-flex;
+    align-items: center;
+}
+
+.inputField,
+.textareaField,
+.selectField,
+.inputFieldSmall {
+    composes: form-control from global;
+}
+
+.textareaField {
+    resize: vertical;
+    min-height: 70px;
+    line-height: 1.5;
+}
+
+.inputFieldSmall {
+    width: 100%;
+    max-width: 180px;
+}
+
+
+.selectContainer {
+    position: relative;
+    display: block;
+    width: 100%;
+}
+
+.selectField {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: calc(var(--spacing-md) + 20px + var(--spacing-md)) !important;
+    cursor: pointer;
+    background-image: none !important;
+    width: 100%;
+}
+
+.selectArrow {
+    position: absolute;
+    top: 50%;
+    right: var(--spacing-md);
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--color-muted);
+}
+
+.inputField:disabled,
+.textareaField:disabled,
+.selectField:disabled,
+.inputFieldSmall:disabled {
+    background-color: var(--background-color-input-disabled) !important;
+    opacity: 0.7 !important;
+    cursor: not-allowed !important;
+}
+
+.gridTwoCols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--spacing-sm) var(--spacing-lg);
+}
+.gridTwoCols .formGroup { margin-bottom: 0; }
+.fullWidthOnGrid { grid-column: 1 / -1; }
+
+
+.jsonInputArea { margin-top: var(--spacing-sm); }
+.jsonInputArea label { font-weight: var(--font-weight-semibold); color: var(--text-color-headings); }
+.jsonInputArea .textareaField {
+    font-family: var(--font-family-monospace);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    min-height: 80px;
+    background-color: var(--code-bg-color);
+    color: var(--text-color-base);
+    border-color: var(--border-color-input);
+}
+.invalidJson {
+    border-color: var(--color-danger) !important;
+    box-shadow: 0 0 0 0.1rem rgba(var(--color-danger-rgb), 0.25) !important;
+}
+.inputError { /* General error style for input fields */
+    border-color: var(--color-danger) !important;
+    box-shadow: 0 0 0 1px var(--color-danger) !important; /* Thinner shadow for inputs */
+}
+.inputError:focus {
+    border-color: var(--color-danger) !important;
+    box-shadow: 0 0 0 0.2rem rgba(var(--color-danger-rgb), 0.25) !important;
+}
+
+
+.helpTextError {
+    display: inline-block;
+    font-size: var(--font-size-xs);
+    color: var(--color-danger-text) !important;
+    margin-left: var(--spacing-sm);
+}
+.helpTextError svg {
+     color: var(--color-danger);
+     margin-right: var(--spacing-xs);
+     vertical-align: middle;
+}
+.inlineErrorText { /* For errors directly below an input or within a component */
+    font-size: var(--font-size-xs);
+    color: var(--color-danger);
+    display: block; /* Or inline-block if preferred */
+    margin-top: var(--spacing-xs);
+    padding-left: 2px; /* Slight indent */
+}
+.inlineErrorTextFullWidth { /* For errors spanning the full width of a form group */
+    composes: inlineErrorText;
+    width: 100%;
+}
+.errorBelowInput { /* Specific class for messages appearing below an input within the same group */
+    font-size: var(--font-size-xs);
+    color: var(--color-danger);
+    padding-top: var(--spacing-xs);
+    display: block; /* Ensures it's on a new line */
+}
+.errorBelowInput svg { margin-right: 3px; vertical-align: text-bottom; }
+
+
+.helpIconWrapperInternal {
+    display: inline-flex;
+    align-items: center;
+    margin-left: var(--spacing-xs);
+    color: var(--color-muted);
+    vertical-align: middle;
+    cursor: help;
+}
+.helpIconInternal { cursor: help; opacity: 0.7; transition: opacity 0.2s, color 0.2s; }
+.helpIconWrapperInternal:hover .helpIconInternal { opacity: 1; color: var(--color-primary); }
+.helpLinkInternal { font-size: 0.85em; margin-left: 3px; color: var(--text-color-link); text-decoration: none; white-space: nowrap; }
+.helpLinkInternal:hover { text-decoration: underline; }
+
+.costPreviewContainer { display: flex; align-items: center; gap: var(--spacing-xs); font-size: var(--font-size-sm); margin-top: var(--spacing-sm); margin-bottom: var(--spacing-md); padding: var(--spacing-xs) var(--spacing-sm); border-radius: var(--border-radius-base); border: 1px solid transparent; max-width: 100%; cursor: help; }
+.costPreviewBadge { display: inline-flex; align-items: center; gap: var(--spacing-xs); font-weight: var(--font-weight-medium); padding: 3px 8px; border-radius: var(--border-radius-pill); font-size: 0.85em; line-height: 1.2; border: 1px solid transparent; }
+.costPreviewContainer span:nth-child(2) { font-weight: var(--font-weight-medium); flex-shrink: 0; }
+.costCalculating { background-color: var(--secondary-bg-color); color: var(--color-muted); border-color: var(--border-color-divider); }
+.costCalculating svg { color: var(--color-muted); }
+.costLow { background-color: var(--color-success-lighter); color: var(--color-success-dark, #155724); border-color: var(--color-success-light); }
+.costLow svg { color: var(--color-success); }
+.costMedium { background-color: var(--color-warning-lighter); color: var(--color-warning-dark, #856404); border-color: var(--color-warning-light); }
+.costMedium svg { color: var(--color-warning); }
+.costHigh { background-color: var(--color-danger-lighter); color: var(--color-danger-dark, #721c24); border-color: var(--color-danger-light); }
+.costHigh svg { color: var(--color-danger); }
+.costUnknown { background-color: var(--secondary-bg-color); color: var(--color-muted); border-color: var(--border-color-divider); }
+.costUnknown svg { color: var(--color-muted); }
+.spinningIconSmall { composes: spinning-icon from global; width: 1em; height: 1em; }
+
+.advancedToggleButtonSmall { composes: btn btn-xs btn-outline-secondary from global; padding: 2px 6px; font-size: 0.8em; line-height: 1; }
+.whatIfConditionTextarea { composes: textareaField; min-height: 80px; }
+
+.complexParamDefinitionItem { border: 1px dashed var(--border-color-light); padding: var(--spacing-sm); border-radius: var(--border-radius-sm); background-color: var(--background-color-body-subtle); }
+.complexParamDefinitionItem label { font-weight: var(--font-weight-medium); color: var(--text-color-headings); display: block; }
+.paramTypeHint { font-size: 0.8em; color: var(--color-muted); margin-left: var(--spacing-sm); font-style: italic; font-weight: normal; }
+.readOnlyPlaceholderContainer { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-xs) var(--spacing-sm); background-color: var(--disabled-bg-color); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color-input); color: var(--text-color-paragraph); font-style: italic; }
+.placeholderIcon { color: var(--color-muted); flex-shrink: 0; }
+.placeholderText { flex-grow: 1; font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.codeLike { font-family: var(--font-family-monospace); font-style: normal; }
+.editComplexParamButton { composes: btn btn-xs btn-outline-secondary from global; padding: 2px 6px !important; font-size: 0.8em !important; line-height: 1 !important; flex-shrink: 0; }
+.editComplexParamButton svg { margin-right: 2px; }
+.typeSelectSmall { composes: selectField; font-size: var(--font-size-sm) !important; padding: calc(var(--spacing-xs) / 1.5) var(--spacing-sm) !important; height: auto !important; max-width: 150px; }
+.inputFieldParamNumber { composes: inputFieldSmall; text-align: right; max-width: 120px; }
+.textareaParamSmall { composes: textareaField; font-size: var(--font-size-sm) !important; min-height: 40px !important; line-height: 1.4 !important; }
+.helpTextErrorNoNovel { font-size: var(--font-size-xs); color: var(--color-muted); margin-left: var(--spacing-sm); }
+.helpTextErrorLoading { composes: helpTextErrorNoNovel; color: var(--color-warning-text); display: inline-flex; align-items: center;}
+.helpTextErrorLoading svg { color: var(--color-warning); margin-right: var(--spacing-xs);}
+
+/* Novel Element Selector (for react-select) */
+.novelElementSelectorContainer { display: flex; align-items: center; gap: var(--spacing-xs); }
+.novelElementSelectorContainer .react-select-custom-container { flex-grow: 1; } /* Ensure select takes space */
+
+/* USER_INPUT_CHOICE specific styles */
+.userInputChoiceContainer { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.optionsFieldset { border: 1px solid var(--border-color-divider); border-radius: var(--border-radius-sm); padding: var(--spacing-md); margin-top: var(--spacing-xs); }
+.optionsFieldset legend { font-size: 0.9em; font-weight: var(--font-weight-medium); color: var(--secondary-text-color); padding: 0 var(--spacing-xs); margin-left: var(--spacing-sm); display:inline-flex; align-items:center; }
+.optionEditRow { display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-sm); padding: var(--spacing-xs); border-radius: var(--border-radius-xs); }
+.optionEditRow.optionRowError { background-color: var(--color-danger-lighter); border: 1px dashed var(--color-danger); }
+.optionIcon { color: var(--color-muted); flex-shrink: 0; }
+.optionInputGroup { flex-grow: 1; display: flex; flex-direction: column; gap: 2px; }
+.optionLabelInput { flex-basis: 45%; }
+.optionValueInput { flex-basis: 45%; }
+.optionValueInput.inputError { border-color: var(--color-danger) !important; background-color: var(--color-danger-lighter) !important; }
+.removeOptionButton { /* composes: btn-icon btn-icon-danger from global; -- Assuming global defines these */ padding: 3px; margin-left: var(--spacing-xs); }
+.addOptionButton { margin-top: var(--spacing-sm); }
+.helpTextErrorValidation { composes: helpTextError; display: block; margin-top: var(--spacing-xs); }
+
+/* FILE_REFERENCE_TEXT specific styles */
+.fileReferenceContainer { display: flex; align-items: center; gap: var(--spacing-sm); }
+.fileReferenceInput { flex-grow: 1; }
+.browseButton { white-space: nowrap; display: inline-flex; align-items: center; gap: var(--spacing-xs); }
+.browseButton svg { color: var(--color-primary); }
+
+/* FileSelectionModal styles */
+.fileSelectionModal { max-width: 700px; width: 90vw; }
+.fileModalBody { display: flex; flex-direction: column; gap: var(--spacing-md); max-height: 60vh; /* Allow scroll within body if content overflows */ overflow-y: auto; }
+.fileList { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color-light); border-radius: var(--border-radius-sm); background-color: var(--background-color-body); }
+.fileListItem { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm); border-bottom: 1px solid var(--border-color-lightest); cursor: pointer; transition: background-color 0.15s ease; }
+.fileListItem:last-child { border-bottom: none; }
+.fileListItem:hover { background-color: var(--hover-bg-color); }
+.fileIcon { color: var(--color-muted); flex-shrink: 0; }
+.fileIconByType { /* Base for typed icons */ composes: fileIcon; }
+.fileIconGeneric { composes: fileIconByType; color: var(--color-secondary); }
+.fileIconImage { composes: fileIconByType; color: var(--color-success); } /* Example color */
+.fileIconPdf { composes: fileIconByType; color: var(--color-danger); } /* Example color */
+.fileName { flex-grow: 1; font-size: 0.9em; color: var(--text-color-base); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fileTypeBadge { composes: tag-item from global; font-size: 0.75em; background-color: var(--secondary-bg-color); color: var(--secondary-text-color); border-color: var(--border-color-divider); flex-shrink: 0; }
+.fileUrlIcon { color: var(--text-color-link); margin-left: auto; flex-shrink: 0; opacity: 0.7; }
+.centeredMessage { display: flex; align-items: center; justify-content: center; padding: var(--spacing-lg); font-style: italic; color: var(--color-muted); gap: var(--spacing-sm); }
+.externalUrlInputSection { margin-top: var(--spacing-md); padding-top: var(--spacing-md); border-top: 1px dashed var(--border-color-divider); }
+.externalUrlInputSection label { display: block; margin-bottom: var(--spacing-xs); font-weight: var(--font-weight-medium); font-size: 0.9em; }
+.externalUrlInputWithButton { display: flex; gap: var(--spacing-sm); }
+.externalUrlInputWithButton input { flex-grow: 1; }
+.externalUrlInputWithButton .btn { white-space: nowrap; }
+
+/* PREVIOUS_STEP_OUTPUT_FIELD styles */
+.previousStepOutputContainer { display: flex; align-items: center; gap: var(--spacing-sm); }
+.previousStepOutputInput { flex-grow: 1; font-family: var(--font-family-monospace); font-size: 0.9em; }
+.previousStepOutputInput.inputError { /* compose .inputError here if needed, or rely on parent selector */ }

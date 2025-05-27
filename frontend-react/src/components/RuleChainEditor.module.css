@@ -1,0 +1,350 @@
+/* frontend-react/src/components/RuleChainEditor.module.css */
+/* 保持您原有的样式，并在此基础上补充或调整 */
+
+.editorContainer {
+    padding: var(--spacing-lg);
+    max-width: 1024px; /* 您原有的设定 */
+    margin: 0 auto var(--spacing-xl) auto;
+    background-color: var(--background-color-card);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--box-shadow-base);
+    border: 1px solid var(--border-color-base);
+}
+
+.editorHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color-divider);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+
+.editorHeader h2 {
+    margin: 0;
+    font-size: var(--font-size-xl);
+    color: var(--text-color-headings);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    line-height: 1.2;
+    flex-grow: 1;
+}
+
+.editingChainName {
+    /* 您原有的样式 */
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    margin-left: var(--spacing-xs);
+}
+
+.headerActions {
+    /* 您原有的样式 */
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.ruleChainForm {
+    /* 您原有的样式，可以为空 */
+}
+
+.formCard {
+    /* 您原有的样式 */
+    margin-bottom: var(--spacing-lg); /* 与我之前建议的 24px 一致 */
+    background-color: var(--background-color-card); /* 通常是 #fff 或您的主题卡片背景色 */
+    border-radius: var(--border-radius-md); /* 与您其他卡片一致的圆角 */
+    box-shadow: var(--box-shadow-card); /* 与您其他卡片一致的阴影 */
+    border: 1px solid var(--border-color-card);
+}
+
+/* Ant Design Card 标题的全局覆盖 (如果需要统一调整) */
+.formCard :global(.ant-card-head-title) {
+    font-size: var(--font-size-md); /* 调整为您期望的卡片标题大小 */
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color-strong);
+}
+
+.formCard :global(.ant-card-extra .ant-btn) {
+    font-size: var(--font-size-sm); /* 卡片右上角额外操作按钮的字体大小 */
+}
+
+
+.formActionsContainer {
+    /* 您原有的样式 */
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color-divider);
+    text-align: right;
+    display: flex; /* 用于更好地控制按钮组对齐 */
+    justify-content: flex-end; /* 按钮靠右 */
+    gap: var(--spacing-sm);
+}
+
+/* 步骤列表区域 */
+.stepsListContainer {
+    /* 您原有的样式 */
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-md);
+    border: 1px dashed var(--border-color-base);
+    border-radius: var(--border-radius-md);
+    background-color: var(--background-color-light); /* 浅色背景，与卡片区分 */
+    min-height: 150px; /* 给一个最小高度，方便拖拽空列表 */
+    display: flex; /* 用于垂直居中空状态提示 */
+    flex-direction: column; /* 确保空状态提示在内部 */
+}
+
+.emptyStepsPlaceholder {
+    /* 您原有的样式 */
+    composes: info-message from global; /* 继承全局信息提示样式 */
+    padding: var(--spacing-lg);
+    text-align: center;
+    margin: auto; /* 使其在 flex 容器中居中 */
+    display: flex;
+    flex-direction: column; /* 图标和文字垂直排列 */
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+/* 步骤列表本身的样式 (Ant Design List) */
+.stepsList {
+    /* background-color: transparent; */ /* 继承 .stepsListContainer 的背景 */
+}
+
+/* 单个步骤项的基础样式 */
+.stepItemBase {
+    background-color: var(--background-color-card); /* 每个步骤项类似一个小卡片 */
+    border: 1px solid var(--border-color-card);
+    border-radius: var(--border-radius-sm);
+    margin-bottom: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md) !important;
+    box-shadow: var(--box-shadow-sm);
+    cursor: default;
+    transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+    display: flex; /* 确保内部元素正确对齐 */
+    align-items: center;
+    justify-content: space-between; /* 主要内容和操作按钮分开 */
+}
+
+.stepItemBase:hover {
+    border-color: var(--color-primary-hover);
+    box-shadow: var(--box-shadow-lg);
+}
+
+/* 拖拽时的步骤项样式 */
+.stepItemDragging {
+    box-shadow: var(--box-shadow-active) !important; /* 更明显的阴影 */
+    background-color: var(--background-color-info-light) !important; /* 拖拽时背景高亮 */
+    transform: scale(1.02); /* 轻微放大效果 */
+}
+
+/* 私有步骤和模板步骤的特定视觉指示 */
+.privateStepItem {
+    border-left: 4px solid var(--color-primary); /* 蓝色边框表示私有 */
+}
+
+.templateStepItem {
+    border-left: 4px solid var(--color-success); /* 绿色边框表示模板 */
+}
+
+.dragHandleArea { /* 包裹可拖拽区域的容器 */
+    display: flex;
+    align-items: center;
+    flex-grow: 1; /* 占据主要空间 */
+    cursor: grab; /* 在整个可拖拽区域显示抓取手势 */
+    padding-right: var(--spacing-md); /* 与右侧操作按钮的间距 */
+}
+.dragHandleArea:active {
+    cursor: grabbing;
+}
+
+.dragHandle { /* 拖拽图标本身 */
+    color: var(--text-color-placeholder);
+    font-size: 1.2em; /* 图标大小 */
+    margin-right: var(--spacing-sm); /* 与右侧图标/文字的间距 */
+    padding: var(--spacing-xs); /* 增加点击区域 */
+}
+
+
+.stepIcon {
+    font-size: 1.3em; /* 步骤类型图标（私有/模板）的大小 */
+    margin-right: var(--spacing-sm);
+    color: var(--text-color-secondary);
+    flex-shrink: 0; /* 防止图标被压缩 */
+}
+
+.stepContent {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* 防止内容溢出影响布局 */
+}
+
+.stepOrderText {
+    color: var(--text-color-placeholder);
+    font-size: var(--font-size-xs);
+    margin-right: var(--spacing-xs);
+    font-weight: var(--font-weight-medium);
+}
+
+.stepName {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color-base);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* 名称过长时显示省略号 */
+}
+
+.stepDescription {
+    font-size: var(--font-size-sm);
+    color: var(--text-color-secondary);
+    margin-top: 2px !important;
+    margin-bottom: 0 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stepActionsButton {
+    color: var(--text-color-actions); /* 您定义的动作按钮颜色 */
+    padding: var(--spacing-xxs); /* 增加点击区域 */
+}
+.stepActionsButton:hover {
+    color: var(--color-primary-hover);
+}
+
+
+/* 步骤详情编辑区域 (内联表单) */
+.stepDetailsEditor {
+    /* 您原有的样式 */
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border-color-card);
+    border-radius: var(--border-radius-md);
+    background-color: var(--background-color-card-inset); /* 内嵌区域背景色 */
+    box-shadow: var(--box-shadow-inset);
+}
+
+.stepDetailsHeader {
+    /* 您原有的样式 */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color-divider);
+}
+
+.stepDetailsHeader h4 {
+    /* 您原有的样式 */
+    margin: 0;
+    font-size: var(--font-size-md);
+    color: var(--text-color-strong);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.stepFormItem {
+    /* 您原有的样式 */
+    margin-bottom: var(--spacing-md) !important; /* 统一表单项间距 */
+}
+
+.jsonTextArea {
+    /* 您原有的样式 */
+    font-family: var(--font-family-monospace);
+    font-size: var(--font-size-sm);
+    min-height: 100px; /* JSON输入框的最小高度 */
+    background-color: var(--background-color-code);
+    color: var(--text-color-code);
+    border-color: var(--border-color-input);
+}
+.jsonTextArea:focus {
+    border-color: var(--color-primary);
+    box-shadow: var(--input-focus-shadow);
+}
+
+
+/* 模板选择模态框内的列表样式 */
+.templateSelectionList :global(.ant-list-item) {
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: var(--spacing-xxs) !important; /* 覆盖antd默认值 */
+  border: 1px solid transparent; /* 占位边框 */
+  padding: var(--spacing-sm) var(--spacing-md) !important;
+}
+
+.templateSelectionList :global(.ant-list-item:hover) {
+  background-color: var(--background-color-hover); /* 鼠标悬浮时高亮 */
+  border-color: var(--border-color-hover);
+}
+
+.selectedTemplateItem { /* 被选中项的样式 */
+  background-color: var(--background-color-selected) !important;
+  border-left: 3px solid var(--color-primary) !important;
+  box-shadow: var(--box-shadow-sm);
+}
+
+/* 模态框内列表项的 Meta 描述样式 */
+.templateSelectionList :global(.ant-list-item-meta-description) {
+    font-size: var(--font-size-xs);
+    color: var(--text-color-secondary);
+}
+.templateSelectionList :global(.ant-list-item-meta-description .ant-tag) {
+    margin-right: var(--spacing-xs);
+}
+
+
+/* 确保HelpTooltip样式一致 (您原有的) */
+.helpIconWrapperInternal {
+    display: inline-flex;
+    align-items: center;
+    margin-left: var(--spacing-xs);
+    color: var(--color-muted);
+    vertical-align: middle;
+}
+.helpIcon {
+    cursor: help;
+}
+
+/* 复选框组的样式 (您原有的) */
+.checkboxGroup {
+    display: flex;
+    flex-direction: column; /* 或 row, wrap 等根据需要 */
+    gap: var(--spacing-xs);
+}
+.checkboxGroup label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: normal;
+    color: var(--text-color-base);
+}
+.checkboxGroup input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--color-primary);
+    width: 1em;
+    height: 1em;
+    margin-right: var(--spacing-xs);
+}
+
+/* Placeholder message 样式 (您原有的) */
+.placeholderMessage {
+    composes: info-message from global;
+    padding: var(--spacing-lg);
+    text-align: center;
+    margin-top: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+/* Spinning icon 样式 (您原有的) */
+.spinningIcon {
+    composes: spinning-icon from global;
+}

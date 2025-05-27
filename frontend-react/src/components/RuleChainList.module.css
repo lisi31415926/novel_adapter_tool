@@ -1,0 +1,230 @@
+/* frontend-react/src/components/RuleChainList.module.css */
+
+.ruleChainListContainer {
+  /* 继承或应用 global.css 中的 .section 基础样式 */
+  padding: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+  background-color: var(--background-color-card);
+  border: 1px solid var(--border-color-base);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--box-shadow-base);
+}
+
+.ruleChainListContainer h2 {
+  font-size: calc(var(--font-size-base) * 1.4);
+  margin-top: 0;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color-divider);
+  text-align: left;
+  color: var(--text-color-headings);
+  font-weight: var(--font-weight-semibold);
+  display: flex; 
+  align-items: center;
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg); /* 与下方列表的间距 */
+}
+
+.listHeader .btn { /* 刷新按钮 */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.listVirtualScrollContainerRuleChain {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  height: 600px; 
+  max-height: 70vh; 
+  overflow-y: auto; 
+  position: relative; 
+  border: 1px solid var(--border-color-divider); 
+  border-radius: var(--border-radius-md);
+  background-color: var(--background-color-body); 
+}
+
+.listItemVirtualRuleChain {
+  box-sizing: border-box;
+  display: flex; 
+}
+
+.listItemInnerContent {
+  width: 100%; 
+  padding: var(--spacing-lg);
+  border: 1px solid var(--border-color-base); 
+  border-radius: var(--border-radius-md);
+  background-color: var(--background-color-card); 
+  box-shadow: var(--box-shadow-sm);
+  display: flex;
+  flex-direction: column; 
+  gap: var(--spacing-md); 
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease-out;
+  min-height: calc(var(--est-rule-chain-row-height, 200px) - 2 * var(--spacing-xs)); 
+  box-sizing: border-box;
+}
+
+.listItemInnerContent:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--box-shadow-md);
+  transform: translateY(-2px); 
+}
+
+
+.chainHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chainName {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-dark, var(--color-primary));
+  font-size: calc(var(--font-size-base) * 1.25);
+  word-break: break-all; 
+  line-height: 1.3;
+  margin-right: var(--spacing-sm); 
+}
+
+.templateTag {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-color-light);
+  background-color: var(--color-info); /* 使用信息色作为模板标签背景 */
+  padding: 2px var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  margin-left: var(--spacing-sm);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.chainDescription {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  white-space: pre-wrap; 
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3; 
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: calc(1.5em * 3); 
+}
+
+.chainStepsPreview {
+  font-size: var(--font-size-sm);
+  color: var(--text-color-paragraph);
+  padding: var(--spacing-sm);
+  margin-top: var(--spacing-xs); 
+  border-top: 1px dashed var(--border-color-dotted-divider);
+  background-color: var(--secondary-bg-color); 
+  border-radius: var(--border-radius-sm);
+}
+
+.chainStepsPreview strong {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-color-base);
+  display: block;
+  margin-bottom: var(--spacing-sm);
+}
+
+.chainStepsPreview ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.chainStepsPreview li {
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-muted);
+  padding-left: var(--spacing-sm); 
+  position: relative;
+  line-height: 1.4; 
+  white-space: nowrap; 
+  overflow: hidden;
+  text-overflow: ellipsis; 
+}
+
+.chainStepsPreview .taskLabel {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-color-base);
+}
+
+.chainStepsPreview .stepParams {
+  color: var(--color-secondary);
+  font-size: 0.9em;
+  margin-left: var(--spacing-sm);
+  font-style: italic;
+}
+
+.actionsContainer {
+  display: flex;
+  gap: var(--spacing-sm); 
+  margin-top: auto; 
+  padding-top: var(--spacing-sm); 
+  align-items: center;
+  align-self: flex-start; 
+  flex-wrap: wrap; 
+}
+
+.actionsContainer .btn svg {
+  margin-right: var(--spacing-xs);
+}
+
+/* 新增：为“以此为模板创建”按钮定义样式 */
+.templateCreateButton {
+  composes: btn btn-sm from global; /* 继承全局 .btn 和 .btn-sm */
+  background-color: var(--color-info); /* 使用信息蓝色作为背景 */
+  color: var(--text-color-light); /* 浅色文字以保证对比度 */
+  border-color: var(--color-info-dark); /* 使用信息色的深色变体作为边框 */
+  display: inline-flex; /* 确保图标和文字能良好对齐 */
+  align-items: center; /* 垂直居中对齐 */
+  gap: var(--spacing-xs); /* 图标和文字之间的间距 */
+}
+
+.templateCreateButton:hover {
+  background-color: var(--color-info-dark); /* 鼠标悬停时背景变深 */
+  border-color: var(--color-info-darker, var(--color-info-dark)); /* 边框也相应变化 */
+  color: var(--text-color-light); /* 文字颜色保持浅色 */
+}
+
+
+.loadingMessage,
+.errorMessage,
+.noDataMessage {
+  padding: var(--spacing-lg);
+  text-align: center;
+  display: flex; 
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  min-height: 100px; 
+}
+.loadingMessage { composes: loading-message from global; }
+.errorMessage { composes: error-message from global; }
+.noDataMessage { composes: no-data-message from global; }
+.noDataMessage .btn { margin-left: var(--spacing-sm); }
+
+.inlineLoading,
+.inlineError {
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  margin-bottom: var(--spacing-sm);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+.inlineLoading { color: var(--color-info-text); background-color: var(--color-info-bg); border: 1px dashed var(--color-info-border); }
+.inlineError { color: var(--color-danger-text); background-color: var(--color-danger-bg); border: 1px solid var(--color-danger-border); }
+
+.spinningIcon {
+  composes: spinning-icon from global;
+}

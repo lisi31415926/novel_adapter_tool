@@ -1,0 +1,271 @@
+/* frontend-react/src/components/configuration/SharedSettingsForm.module.css */
+/* 这个文件提供被多个简单配置表单组件复用的基础样式 */
+
+/* 表单容器的通用样式 */
+.antdFormContainer { /* Ant Design Form 组件通常不需要额外的容器样式 */
+    padding: 10px 0; /* 可以给表单部分一些垂直内边距 */
+}
+
+/* 表单网格布局 */
+.formGrid {
+    display: grid;
+    /* 响应式列布局：在较小屏幕上单列，在较大屏幕上根据可用空间自动调整列数 */
+    /* minmax(300px, 1fr) 表示列的最小宽度为300px，最大为1等份空间 */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px 24px; /* 行间距和列间距 (垂直和水平) */
+}
+
+/* 单个表单字段容器 (主要用于未使用AntD Form.Item包裹的情况，或作为补充) */
+.formField {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px; /* 默认的垂直间距，AntD Form.Item自带间距 */
+}
+
+/* Ant Design Form.Item 的通用调整 */
+.formItemAntd {
+    margin-bottom: 18px !important; /* 统一AntD Form.Item的下边距 */
+}
+
+.formItemAntd label,
+.formField label { /* AntD 和自定义标签的统一样式 */
+    font-weight: 500; /* 略微加粗 */
+    margin-bottom: 6px !important; /* 确保AntD label也有下边距 */
+    font-size: 14px; /* AntD 默认标签字体大小 */
+    color: rgba(0, 0, 0, 0.88); /* AntD 默认标签颜色 */
+    display: inline-flex; /* 使Tooltip图标能和文字对齐 */
+    align-items: center;
+    line-height: 1.5715; /* AntD 行高 */
+}
+
+/* Ant Design Tooltip图标的样式 */
+.formItemAntd label .anticon,
+.formField label .anticon {
+    margin-left: 4px;
+    color: rgba(0,0,0,.45); /* AntD 辅助图标颜色 */
+    font-size: 13px; /* 使图标略小于文字 */
+}
+
+/* 必填项星号的样式 */
+.requiredStar {
+    color: #ff4d4f; /* AntD 错误/必填红色 */
+    margin-left: 4px;
+    font-family: SimSun, sans-serif; /* 确保星号能正确显示 */
+    line-height: 1; /* 避免影响行高 */
+    vertical-align: middle; /* 与文本垂直对齐 */
+}
+
+/* 输入框、下拉框、数字输入框、文本域的通用AntD样式调整(如果需要) */
+/* AntD组件通常自带良好的样式，这里可以进行微调或保持默认 */
+/*
+.formItemAntd .ant-input,
+.formItemAntd .ant-input-number,
+.formItemAntd .ant-select-selector,
+.formItemAntd .ant-picker, // DatePicker, TimePicker etc.
+.formItemAntd .ant-input-affix-wrapper, // Input with prefix/suffix
+.formItemAntd textarea.ant-input {
+    font-size: 14px; // 确保与标签字体大小协调
+}
+*/
+
+/* 辅助提示文本和错误信息的样式 */
+.formItemAntd .ant-form-item-extra, /* AntD Form.Item 的 help text (辅助说明) */
+.formItemAntd .ant-form-item-explain-error, /* AntD Form.Item 的 error text (错误提示) */
+.helpText { /* 自定义的帮助文本，如果未使用 Form.Item 的 help 属性 */
+    font-size: 12px;
+    color: rgba(0,0,0,.45); /* AntD 辅助文本颜色 */
+    min-height: 22px; /* 保持一致高度，避免布局跳动 */
+    padding-top: 2px; /* 微调与输入框的距离 */
+    line-height: 1.5;
+    margin-bottom: 0; /* 通常 Form.Item 会处理这个 */
+}
+.formItemAntd .ant-form-item-explain-error {
+    color: #ff4d4f; /* AntD 错误颜色 */
+}
+
+/* 复选框相关的样式 */
+.checkboxLabelFullWidth { /* 用于使Checkbox标签和控件占满整行，如果Form.Item不直接支持 */
+    grid-column: 1 / -1; /* 在网格布局中占满整行 */
+    /* AntD的Checkbox通常与Form.Item的label配合得很好，这个类可能更多用于自定义布局 */
+}
+.checkboxLabelFullWidth .ant-checkbox-wrapper { /* AntD Checkbox 包裹器 */
+    font-weight: normal; /* 普通字重 */
+}
+.checkboxLabelFullWidth .ant-form-item-control-input-content {
+    display: flex;
+    align-items: center; /* 确保复选框和文本对齐 */
+}
+
+
+/* 只读信息文本的样式 (例如显示API密钥来源) */
+.infoTextReadOnly {
+    font-size: 13px;
+    color: #5a5a5a;
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    grid-column: 1 / -1; /* 如果在网格中，占满整行 */
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding-left: 12px;
+    margin-top: 4px; /* 与其他元素的间距 */
+}
+.infoTextReadOnly .ant-tag { /* AntD Tag 组件的间距 */
+    margin-left: 8px;
+}
+
+
+/* 子区域标题和容器的样式 (用于 GlobalLLMSettingsForm, CostEstimationTiersForm 等) */
+.subSection {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #f0f0f0; /* AntD 分割线颜色 */
+    grid-column: 1 / -1; /* 子区域默认占满网格的整行 */
+}
+
+.subSectionTitle {
+    font-size: 1.1em; /* 比主section标题小一些 */
+    color: rgba(0, 0, 0, 0.88); /* AntD 标题颜色 */
+    margin-bottom: 16px;
+    font-weight: 500; /* AntD 中号标题字重 */
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+/* 动态行/键值对列表的样式 (用于 model_aliases, task_model_preference, token_cost_per_model 等) */
+.dynamicRow {
+    display: flex;
+    flex-wrap: wrap; /* 在小屏幕上允许换行 */
+    align-items: flex-start; /* 使多行错误/帮助文本能正确显示在对应Form.Item下方 */
+    gap: 12px; /* 元素之间的水平间距 */
+    margin-bottom: 16px; /* 行之间的垂直间距 */
+    padding: 16px;
+    border: 1px solid #f0f0f0; /* AntD 分割线/边框颜色 */
+    border-radius: 6px; /* AntD Card/表单区域圆角 */
+    background-color: #fafafa; /* 轻微背景色以区分 */
+}
+
+/* 动态行内部的 AntD Form.Item, 移除其默认的下边距，由 .dynamicRow 的 gap 控制 */
+.dynamicRow .ant-form-item {
+    margin-bottom: 0 !important;
+    flex-grow: 1; /* 允许表单项在 flex 布局中伸展 */
+    min-width: 150px; /* 给每个表单项一个最小宽度，以改善换行行为 */
+}
+
+/* 针对动态行中特定宽度需求的 Form.Item */
+.dynamicFieldItem { /* 通用动态字段，通常 flex-grow: 1 即可 */
+    /* min-width: 200px; */ /* 可以根据内容调整 */
+}
+.dynamicFieldItemNarrow { /* 用于较窄的输入，如数字 */
+    flex-grow: 0; /* 不伸展 */
+    flex-basis: 120px; /* 基础宽度 */
+    min-width: 100px; /* 最小宽度 */
+}
+
+/* 确保动态行中的 Select 和 InputNumber 占满其 Form.Item 容器 */
+.dynamicFieldItem .ant-select,
+.dynamicFieldItemNarrow .ant-input-number {
+    width: 100%;
+}
+
+
+/* 键值对之间的箭头或分隔符 */
+.separator {
+    font-weight: normal;
+    color: #555;
+    padding-top: 8px; /* 与 Antd Input/Select 的内容部分大致对齐 */
+    margin: 0 8px; /* 水平间距 */
+    align-self: center; /* 尝试垂直居中箭头 */
+    line-height: 32px; /* Antd 默认输入框高度 */
+}
+
+/* 删除按钮的样式 (用于动态列表) */
+.deleteButton, 
+.deleteButtonSmall,
+.deleteButtonSmallIconOnly {
+    background: none;
+    border: none;
+    color: #ff4d4f; /* Antd 危险色 */
+    cursor: pointer;
+    padding: 0; /* 通常图标按钮不需要内边距 */
+    font-size: 16px; /* Antd 图标大小 */
+    line-height: 32px; /* 与输入框高度对齐，使其垂直居中 */
+    transition: color 0.3s;
+    align-self: center; /* 垂直居中删除按钮 */
+    margin-left: 8px;
+}
+.deleteButton:hover, 
+.deleteButtonSmall:hover,
+.deleteButtonSmallIconOnly:hover {
+    color: #cf1322; /* AntD 危险色深色 */
+}
+.deleteButtonSmall { /* 如果需要更小的文本按钮 */
+    font-size: 14px; 
+    padding: 0 8px;
+}
+.deleteButtonSmallIconOnly { /* 如果只是图标 */
+    /* 保持 font-size: 16px; */
+}
+
+
+/* “添加”按钮的样式 (用于动态列表) */
+.addButtonSmall,
+.addButtonDynamic {
+    margin-top: 10px; /* 与列表最后一行的间距 */
+    border-style: dashed !important; /* AntD dashed 按钮 */
+    width: 100%; /* 动态列表的添加按钮通常占满一行，或设为 auto */
+}
+/* .addButtonDynamic { // 如果需要特定于Form.List的添加按钮样式 } */
+
+
+/* 占满整行的字段 (例如某些 Textarea) */
+.fullWidthField {
+    grid-column: 1 / -1;
+}
+
+/* 针对 CostEstimationTiersForm 中 token_cost_per_model 的特定样式 */
+.costRow { /* 保持 .dynamicRow 的特性，但可以添加特定微调 */
+    align-items: center; /* 确保成本行内的元素垂直居中 */
+}
+.costModelName { /* 用于显示模型名称 */
+    flex-basis: 200px; /* 给模型名称一个基础宽度 */
+    flex-shrink: 0; /* 防止被压缩 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 10px;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 32px;
+}
+.formFieldInline { /* 用于成本输入和标签的水平排列 */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-grow: 1; /* 占据剩余空间 */
+}
+.formFieldInline label { /* 内联表单项的标签 */
+    font-size: 14px;
+    margin-bottom: 0; /* 移除下边距 */
+    color: rgba(0,0,0,.88);
+    flex-shrink: 0; /* 防止标签被压缩 */
+    white-space: nowrap; /* 防止标签换行 */
+}
+.costInput { /* 给成本输入框一个合适的宽度 */
+    width: 100px !important; /* 使用 !important 覆盖 AntD InputNumber 默认宽度 */
+    min-width: 80px !important;
+    flex-grow: 0 !important; /* 不伸展 */
+}
+
+/* 用于普通提示或占位符的文本 */
+.todoPlaceholder {
+    background-color: #fffbe6; /* Antd 警告黄 */
+    border: 1px solid #ffe58f; /* Antd 警告黄边框 */
+    color: rgba(0,0,0,.88);
+    padding: 12px 16px;
+    border-radius: 4px; /* Antd 圆角 */
+    margin: 10px 0;
+    font-style: italic;
+    text-align: center;
+}

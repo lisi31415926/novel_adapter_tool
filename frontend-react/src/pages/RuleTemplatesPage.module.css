@@ -1,0 +1,15 @@
+/* frontend-react/src/pages/RuleTemplatesPage.module.css */
+
+.ruleTemplatesPageContainer {
+    /* 可以为这个特定页面的容器添加额外样式，如果 pageStyles.pageContent 不够用的话 */
+    /* 例如，如果需要不同于通用页面的背景色或特定布局 */
+  }
+  
+  /* 如果页面内有其他特定于此页面的元素，可以在这里定义它们的样式 */
+  /* 例如，如果列表上方有筛选器区域 */
+  .filterArea {
+    margin-bottom: 16px;
+    padding: 16px;
+    background-color: #f9f9f9; /* 浅灰色背景 */
+    border-radius: 6px;
+  }

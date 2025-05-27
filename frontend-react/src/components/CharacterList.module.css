@@ -1,0 +1,27 @@
+/* frontend-react/src/components/CharacterList.module.css */
+
+/* .characterListAntdTableContainer { */
+  /* 如果需要，可以为 Table 的外层容器添加样式 */
+  /* margin-top: 16px; */ /* 例如，与上方筛选区域的间距，通常由父组件布局控制 */
+/* } */
+
+/* .characterTableAntd .ant-table-thead > tr > th { */
+  /* 如果需要覆盖 AntD 表头的默认样式 */
+  /* background-color: #f0f2f5; */
+  /* font-weight: 500; */
+/* } */
+
+/* .characterTableAntd .ant-table-tbody > tr > td { */
+  /* 如果需要覆盖 AntD 表格单元格的默认样式 */
+  /* padding: 12px 16px; */
+/* } */
+
+/* 可以保留一些用于微调特定单元格内容的样式，如果AntD默认不满足 */
+/* 例如，如果希望某个单元格内的文本有特殊对齐或颜色 */
+/*
+.customCellContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+*/

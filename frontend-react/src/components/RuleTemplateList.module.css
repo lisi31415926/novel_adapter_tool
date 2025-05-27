@@ -1,0 +1,56 @@
+/* frontend-react/src/components/RuleTemplateList.module.css (优化后) */
+
+/* 可以用于包裹整个列表组件的容器，使其风格与其他页面/组件的列表区域一致 */
+.listWrapper {
+    background-color: #fff; /* 白色背景，常见于您的其他组件 */
+    padding: 20px;          /* 与其他容器一致的内边距 */
+    border-radius: 8px;     /* 轻微的圆角 */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); /* 细微的阴影，增加层次感 */
+    /* 如果列表本身有标题或操作栏在Table外部，可以像这样设置：*/
+    /* display: flex; */
+    /* flex-direction: column; */
+    /* gap: 16px; */ /* 子元素（如标题栏和表格）之间的间距 */
+  }
+  
+  /* 表格上方的操作栏/标题栏的通用样式 (如果 RuleTemplateList.tsx 内部不直接包含新增按钮，此样式可能放在父组件的页面级CSS中) */
+  .listHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px; /* 表头与表格之间的间距 */
+  }
+  
+  .listTitle {
+    font-size: 18px; /* 标题字体大小 */
+    font-weight: 500; /* 标题字重 */
+    color: #333;    /* 深色文字 */
+  }
+  
+  /* 操作单元格的样式 */
+  .actionsCell {
+    /* Ant Design 的 Space 组件通常能很好地处理按钮间距。
+       如果需要更细致的控制，可以在这里添加样式。
+       例如，确保所有操作按钮垂直居中（如果 Space 未能完美处理） */
+    display: flex;
+    align-items: center;
+    gap: 8px; /* 按钮之间的间距，可以根据实际效果调整或依赖 Space 组件 */
+  }
+  
+  /* 特定列的自定义样式示例 */
+  .descriptionCell {
+    /* 使用 Ant Design Table 的 ellipsis 属性是更好的选择，但如果需要强制行为： */
+    /* max-width: 250px; */
+    /* white-space: nowrap; */
+    /* overflow: hidden; */
+    /* text-overflow: ellipsis; */
+  }
+  
+  .nameCell {
+    font-weight: 500; /* 让名称列的文字略微加粗，突出显示 */
+  }
+  
+  /* 可以为 Tag 添加一些通用样式，如果需要的话 */
+  .taskTypeTag {
+    /* border-radius: 4px; */ /* 调整标签圆角 */
+    /* padding: 2px 8px; */
+  }

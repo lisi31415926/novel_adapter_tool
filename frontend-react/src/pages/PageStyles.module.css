@@ -1,0 +1,255 @@
+/* frontend-react/src/pages/PageStyles.module.css */
+
+/* --- 页面通用容器 --- */
+.pageContainer {
+  padding: var(--spacing-lg); /* 页面级别的主要内边距 */
+  max-width: var(--page-max-width, 1200px); /* 页面最大宽度，可在 global.css 定义变量 */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* --- 页面头部 --- */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* 允许在小屏幕上换行 */
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg); /* 调整与下方内容的间距 */
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color-divider);
+}
+
+.pageTitle {
+  font-size: var(--font-size-xl); /* 统一页面标题大小 */
+  color: var(--text-color-headings);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  line-height: 1.3;
+  flex-grow: 1; /* 允许标题占据更多空间 */
+}
+.pageTitle svg { /* 页面标题旁的图标 */
+  color: var(--color-primary); /* 默认使用主色调 */
+  flex-shrink: 0;
+}
+
+.pageDescription { /* 页面描述性文本 */
+  composes: info-message from global; /* 继承全局信息提示样式 */
+  /* 如果希望它更像普通段落，可以移除 compose 或调整背景颜色等 */
+  /* background-color: transparent; */
+  /* border-left-color: transparent; */
+  /* color: var(--text-color-paragraph); */
+  font-size: var(--font-size-base); /* 基础字号 */
+  margin-bottom: var(--spacing-lg);
+  line-height: 1.6;
+}
+.pageDescription svg { /* 描述文本旁的 Info 图标 */
+   color: var(--color-info); /* 与 info-message 保持一致 */
+}
+
+
+/* --- 面包屑导航 (来自您上次的文件) --- */
+.pageBreadcrumbNav {
+font-size: var(--font-size-sm);
+color: var(--secondary-text-color);
+margin-bottom: var(--spacing-lg); /* 与下方内容的间距 */
+padding-bottom: var(--spacing-sm); /* 导航栏下内边距 */
+border-bottom: 1px dotted var(--border-color-dotted-divider); /* 面包屑底部分割线 */
+display: flex;
+align-items: center;
+gap: var(--spacing-xs);
+flex-wrap: wrap; /* 允许换行 */
+}
+.pageBreadcrumbNav a {
+color: var(--text-color-link);
+text-decoration: none;
+font-weight: var(--font-weight-medium);
+padding: 2px 0; /* 微调垂直padding */
+display: inline-block; /* 允许padding */
+}
+.pageBreadcrumbNav a:hover {
+text-decoration: underline;
+}
+.pageBreadcrumbNav span { /* 用于当前页面名称 */
+font-weight: var(--font-weight-semibold);
+color: var(--text-color-headings);
+padding: 2px 0;
+display: inline-block;
+}
+/* 分隔符样式 */
+.pageBreadcrumbNav > *:not(:last-child)::after {
+content: "/"; /* 或 ">" */
+margin: 0 var(--spacing-sm);
+color: var(--color-muted);
+font-weight: var(--font-weight-normal);
+}
+/* 图标（如果面包屑项包含图标） */
+.pageBreadcrumbNav svg {
+vertical-align: middle;
+margin-right: 2px; /* 图标与文字的微小间距 */
+width: 1em; /* 控制图标大小与文字协调 */
+height: 1em;
+}
+
+/* --- 通用模态框相关样式 (如果从PageStyles提供) --- */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6); /* 半透明背景 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-index-modal, 1050); /* 确保在顶层 */
+  padding: var(--spacing-md);
+  opacity: 0; /* 初始透明，用于动画 */
+  visibility: hidden;
+  transition: opacity 0.25s ease-out, visibility 0s linear 0.25s;
+}
+.modalOverlay[data-visible="true"] {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.modalContent {
+  background-color: var(--background-color-card);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg); /* 模态框使用较大的圆角 */
+  box-shadow: var(--box-shadow-overlay); /* 更明显的阴影 */
+  width: 100%;
+  max-width: 600px; /* 默认最大宽度，具体模态框可覆盖 */
+  max-height: 90vh; /* 最大高度 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 内容区滚动由 .modalBody 控制 */
+  border: 1px solid var(--border-color-base); /* 轻微边框 */
+  transform: scale(0.95); /* 初始状态，用于打开动画 */
+  opacity: 0;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease-out;
+}
+.modalOverlay[data-visible="true"] .modalContent {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color-divider);
+  margin-bottom: var(--spacing-md);
+  flex-shrink: 0; /* 防止头部被压缩 */
+}
+.modalHeader h4 { /* 模态框标题 */
+  margin: 0;
+  font-size: var(--font-size-lg);
+  color: var(--text-color-headings);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+.modalHeader h4 svg { color: var(--color-primary); }
+
+.modalCloseButton {
+  composes: btn btn-icon from global; /* 继承全局图标按钮样式 */
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  padding: var(--spacing-xs);
+}
+.modalCloseButton:hover {
+  color: var(--text-color-base);
+  background-color: var(--hover-bg-color);
+}
+
+.modalBody {
+  flex-grow: 1; /* 占据主要空间 */
+  overflow-y: auto; /* 内容过多时允许滚动 */
+  line-height: 1.6;
+  padding-right: var(--spacing-xs); /* 为滚动条留出一点空间，避免内容紧贴 */
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end; /* 按钮靠右 */
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-color-divider);
+  margin-top: var(--spacing-lg);
+  flex-shrink: 0; /* 防止脚部被压缩 */
+}
+.modalFooter .btn { /* 脚部按钮可以应用全局按钮样式 */
+  min-width: 90px; /* 给按钮一个最小宽度 */
+}
+.modalFooter .btn-sm {
+   padding: calc(var(--spacing-xs) * 1.5) var(--spacing-sm);
+}
+
+
+/* Select 框相关的辅助样式，如果全局需要 (与ConfigurationPage.module.css中重复，选一处定义或确保composes正确) */
+.selectContainerFullWidth { /* 用于包裹需要100%宽度的select和自定义箭头 */
+  position: relative;
+  width: 100%;
+  display: flex; /* 改为flex以确保select能flex-grow */
+}
+.selectContainerFullWidth .selectField { /* select 元素本身 */
+  composes: form-control from global;
+  flex-grow: 1; /* 允许select占据父容器宽度 */
+  padding-right: calc(var(--form-control-padding-x) + 20px + var(--spacing-xs)) !important; /* 确保箭头空间 */
+  appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: none !important; cursor: pointer;
+}
+.selectContainerFullWidth .selectArrowInsideFull { /* 用于全宽select的箭头 */
+  position: absolute; top: 50%; right: var(--form-control-padding-x); transform: translateY(-50%);
+  pointer-events: none; color: var(--color-muted);
+}
+
+/* 针对更小的select（通常在行内或紧凑表单中使用） */
+.selectContainerMinimal {
+  position: relative;
+  display: inline-block; /* 使其适应内容宽度或由外部容器控制 */
+  min-width: 150px; /* 给一个合理的最小宽度 */
+}
+.selectContainerMinimal .selectFieldSmall {
+  composes: form-control form-control-sm from global; /* 使用sm号表单控件 */
+  padding-right: calc(var(--form-control-padding-x-sm) + 18px + var(--spacing-xxs)) !important; /* 调整箭头空间 */
+  appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: none !important; cursor: pointer;
+  width: 100%; /* 占满 .selectContainerMinimal 的宽度 */
+}
+.selectContainerMinimal .selectArrowSmall {
+  position: absolute; top: 50%; right: var(--form-control-padding-x-sm); transform: translateY(-50%);
+  pointer-events: none; color: var(--color-muted);
+}
+
+/* ReadOnly Badge (例如显示 API Key 来源) */
+.readOnlyBadge {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--border-radius-pill);
+  white-space: nowrap;
+  vertical-align: middle;
+  display: inline-flex; /* for icon alignment */
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+.envSourceBadge {
+  composes: readOnlyBadge;
+  background-color: var(--color-info-lighter);
+  color: var(--color-info-dark);
+  border: 1px solid var(--color-info-light);
+}
+.configSourceBadge {
+  composes: readOnlyBadge;
+  background-color: var(--secondary-bg-color);
+  color: var(--secondary-text-color);
+  border: 1px solid var(--border-color-divider);
+}

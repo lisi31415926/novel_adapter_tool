@@ -1,0 +1,390 @@
+/* frontend-react/src/pages/PlotVersionEditorPage.module.css */
+
+.editorPageContainer {
+    /* Base page container styles are likely from pageViewStyles.pageContainer */
+    /* No specific overrides needed here yet if PageStyles.module.css handles general page padding well. */
+}
+
+.loadingContainer { /* For full page loading state */
+    composes: pageContainer from "./PageStyles.module.css"; /* Ensure base padding */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px; /* Ensure it takes up some space */
+    text-align: center;
+    gap: var(--spacing-md);
+}
+.loadingContainer .spinning-icon {
+    composes: spinning-icon from global;
+}
+
+.breadcrumbNav {
+    font-size: var(--font-size-sm);
+    color: var(--secondary-text-color);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px dotted var(--border-color-dotted-divider);
+    flex-wrap: wrap; /* Allow breadcrumbs to wrap */
+    display: flex; /* For better alignment of items */
+    gap: var(--spacing-xs);
+    align-items: center; /* Vertically align items if they wrap to multiple lines */
+}
+.breadcrumbNav a {
+    color: var(--text-color-link);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+    padding: 2px 0;
+    display: inline-block; /* Allow padding and prevent breaking mid-word unnecessarily */
+}
+.breadcrumbNav a:hover {
+    text-decoration: underline;
+}
+.breadcrumbNav span { /* Current page indicator */
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color-headings);
+    padding: 2px 0;
+    display: inline-block;
+}
+/* This selector targets all direct children except the last one to add a separator */
+.breadcrumbNav > *:not(:last-child)::after {
+    content: "/"; /* Using slash as separator */
+    margin: 0 var(--spacing-sm); /* Increased spacing around separator */
+    color: var(--color-muted);
+    font-weight: var(--font-weight-normal);
+}
+
+
+.editorLayout {
+    display: grid;
+    grid-template-columns: 1fr; /* Default single column, sections stack vertically */
+    gap: var(--spacing-xl); /* Space between sections */
+    margin-top: var(--spacing-lg);
+}
+
+/* Optional: Example for a two-column layout on larger screens */
+ @media (min-width: 1024px) { /* Adjust breakpoint as needed */
+    .editorLayout {
+        /* Example: First column for metadata/summary, second for chapters or more complex editors */
+        /* grid-template-columns: minmax(320px, 1fr) 2fr; */
+        /* For now, keep single column for simplicity until more complex layout is needed */
+    }
+}
+
+.editorSection {
+    background-color: var(--background-color-card);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color-base);
+    box-shadow: var(--box-shadow-sm);
+}
+
+.sectionTitle {
+    font-size: var(--font-size-lg);
+    color: var(--text-color-headings);
+    font-weight: var(--font-weight-semibold);
+    margin-top: 0;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color-divider);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+.sectionTitle svg {
+    color: var(--color-primary);
+}
+
+.sectionHeaderWithAction {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md); 
+}
+.sectionHeaderWithAction h3 { 
+    margin: 0;
+    font-size: var(--font-size-lg); /* Consistent with .sectionTitle */
+    color: var(--text-color-headings);
+    font-weight: var(--font-weight-semibold);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+.sectionHeaderWithAction h3 svg {
+    color: var(--color-primary);
+}
+.sectionHeaderWithAction .btn { /* For buttons like "Edit JSON", "Add Chapter" */
+    flex-shrink: 0; 
+    display: inline-flex; 
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+
+.metadataDisplay {
+    /* Container for displaying version metadata items */
+}
+.metadataGrid { /* If using a grid for metadata display */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-sm) var(--spacing-lg);
+}
+.metadataItem {
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+    color: var(--text-color-paragraph); 
+    display: flex; /* For better alignment of label and value */
+    flex-direction: column; /* Stack label above value */
+    align-items: flex-start;
+}
+.metadataItem strong {
+    font-weight: var(--font-weight-semibold); 
+    color: var(--secondary-text-color);
+    margin-bottom: calc(var(--spacing-xs) / 2); /* Space between label and value */
+    font-size: 0.9em; /* Label slightly smaller */
+}
+.metadataItem span, 
+.metadataItem p { /* Value part */
+    color: var(--text-color-paragraph);
+    word-break: break-word; /* Ensure long values wrap */
+    margin: 0;
+}
+.metadataItem p { /* For multiline descriptions */
+    white-space: pre-wrap; 
+}
+.statusBadge { /* For displaying status like DRAFT, ACTIVE */
+    composes: tag-item from global; /* Inherit base tag style */
+    padding: 2px 8px;
+    font-size: 0.85em;
+    text-transform: capitalize;
+    font-weight: var(--font-weight-medium);
+}
+.statusBadge.statusdraft { background-color: var(--secondary-bg-color); color: var(--secondary-text-color); border-color: var(--border-color-divider); }
+.statusBadge.statusactive { background-color: var(--color-success-bg); color: var(--color-success-text); border-color: var(--color-success-border); }
+.statusBadge.statusarchived { background-color: var(--color-muted-lighter, #f0f0f0); color: var(--color-muted); border-color: var(--border-color-light); }
+.statusBadge.statusfinalized { background-color: var(--color-primary-lighter); color: var(--color-primary-dark); border-color: var(--color-primary-light); }
+
+.descriptionItem { /* If description needs to span full width in grid */
+    grid-column: 1 / -1;
+}
+.metadataDisplay .btn { /* Button inside metadata display, e.g., "Edit Metadata" */
+    margin-top: var(--spacing-md);
+}
+
+
+.contentSummaryDisplay {
+    margin-top: var(--spacing-xs);
+}
+.contentSummaryDisplay pre {
+    composes: codeBlock from global;
+    max-height: 350px; /* Increased max-height for better viewing */
+    font-size: 0.9em;
+    background-color: var(--background-color-body); /* Slightly different background for distinct pre block */
+    border: 1px solid var(--border-color-input);
+    margin-top: 0; 
+}
+.noSummaryMessage { 
+    composes: no-data-message from global; 
+    padding: var(--spacing-sm) 0;
+    text-align: left;
+    font-style: italic;
+}
+
+
+.chaptersListContainer {
+    margin-top: var(--spacing-xs);
+    max-height: 500px; /* Allow more chapters to be visible */
+    overflow-y: auto;
+    padding: 0; /* Remove padding if items have their own */
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--background-color-card); /* Match section background */
+}
+.versionChapterUl { 
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.versionChapterItem { 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md); 
+    border-bottom: 1px solid var(--border-color-lightest); /* Lighter separator */
+    font-size: var(--font-size-base); 
+    transition: background-color 0.15s ease;
+    gap: var(--spacing-md); /* Add gap between info and actions */
+}
+.versionChapterItem:hover {
+    background-color: var(--hover-bg-color);
+}
+.versionChapterItem:last-child {
+    border-bottom: none;
+}
+
+.chapterItemDragHandle { /* Style for the drag handle icon */
+    cursor: grab;
+    color: var(--color-muted);
+    padding: var(--spacing-xs);
+    margin-right: var(--spacing-sm); /* Space between handle and info */
+    display: flex;
+    align-items: center;
+}
+.chapterItemDragHandle:hover {
+    color: var(--text-color-base);
+}
+
+.chapterItemInfo {
+    display: flex;
+    align-items: baseline; /* Align by baseline for better text flow */
+    gap: var(--spacing-sm); /* Increased gap */
+    flex-grow: 1;
+    min-width: 0; 
+    flex-wrap: nowrap; /* Prevent title and preview from wrapping against each other */
+}
+.chapterItemOrder {
+    font-weight: var(--font-weight-semibold); /* Make order number bolder */
+    color: var(--color-primary-dark);
+    min-width: 25px; 
+    text-align: right;
+    flex-shrink: 0;
+}
+.chapterItemTitle {
+    color: var(--text-color-headings); /* Use heading color for title */
+    font-weight: var(--font-weight-medium); 
+    flex-shrink: 0; /* Prevent title from shrinking too much */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px; /* Give title more space */
+}
+.chapterItemContentPreview {
+    font-size: 0.9em; 
+    color: var(--color-muted);
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px; 
+    flex-grow: 1; /* Allow preview to take remaining space */
+    margin-left: var(--spacing-sm); 
+}
+
+.chapterItemActions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-shrink: 0; 
+}
+.chapterItemActions .btn-xs { 
+    padding: 3px 8px; 
+    font-size: var(--font-size-xs);
+    line-height: 1.3;
+    display: inline-flex; 
+    align-items: center;
+    gap: 3px; /* Smaller gap for xs buttons */
+}
+.chapterItemActions .btn-xs svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Styles for NewChapterModal (Modal itself uses pageViewStyles.modal...) */
+.newChapterModalContent {
+    max-width: 550px; 
+}
+
+/* Styles for VersionMetadataEditModal */
+.metadataEditModalContent {
+    max-width: 600px; 
+}
+.formRowModal { /* For status and is_ending on the same line in modal */
+    display: flex;
+    gap: var(--spacing-lg);
+    align-items: flex-end; /* Align form group bottoms */
+}
+.formRowModal .formGroup {
+    flex: 1; 
+    margin-bottom: 0; 
+}
+.checkboxGroupModal { /* Specific styling for checkbox group in modal */
+    display: flex;
+    align-items: center; 
+    /* Align checkbox and label with the bottom of the select field */
+    /* This assumes select field and checkbox + label have roughly same height after adjustments */
+    padding-bottom: calc(var(--form-control-padding-y) + (var(--form-control-border-width) * 2) - var(--spacing-xs) ); 
+    /* Adjust as needed based on actual rendered height of select */
+}
+/* .checkboxGroupModal .checkboxInput, .checkboxGroupModal .checkboxLabel are from pageViewStyles */
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .breadcrumbNav {
+        font-size: var(--font-size-xs); 
+    }
+    .breadcrumbNav > *:not(:last-child)::after {
+        content: ">"; 
+        margin: 0 calc(var(--spacing-xs) / 1.5);
+    }
+    .breadcrumbNav > * {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 70px; 
+    }
+    .breadcrumbNav > *:last-child {
+        max-width: 100px; 
+    }
+
+    .sectionHeaderWithAction {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+    }
+    .sectionHeaderWithAction .btn {
+        align-self: flex-start;
+    }
+    
+    .versionChapterItem {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm); 
+    }
+    .chapterItemInfo {
+        flex-direction: column; 
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+        width: 100%; 
+    }
+    .chapterItemTitle, .chapterItemContentPreview {
+        white-space: normal; /* Allow wrapping on small screens */
+        max-width: 100%;
+    }
+    .chapterItemContentPreview {
+        margin-left: 0; /* Remove margin when stacked */
+    }
+    .chapterItemActions {
+        width: 100%;
+        justify-content: flex-start;
+        margin-top: var(--spacing-sm);
+    }
+    .chapterItemActions .btn-xs {
+        flex-grow: 1; 
+        justify-content: center;
+    }
+
+    .formRowModal { /* Metadata modal form row on small screens */
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-md); /* Same as formGroup for consistency */
+    }
+    .checkboxGroupModal {
+        padding-bottom: 0; /* Reset alignment padding */
+        padding-top: var(--spacing-sm); /* Add some space above if it was removed */
+    }
+    .metadataGrid { /* Metadata display on small screens */
+        grid-template-columns: 1fr; /* Stack items */
+    }
+}

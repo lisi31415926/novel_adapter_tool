@@ -1,0 +1,460 @@
+/* frontend-react/src/components/ChainExecutionResultDisplay.module.css */
+
+.chainExecutionResultArea {
+  /* 规则链执行结果的整体容器 */
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background-color: var(--secondary-bg-color);
+  border: 1px solid var(--border-color-base);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--box-shadow-base);
+}
+
+.chainExecutionResultArea h3 {
+  /* "规则链执行结果:" 主标题 */
+  font-size: calc(var(--font-size-base) * 1.35);
+  color: var(--text-color-headings);
+  margin-top: 0;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--color-primary);
+  text-align: left;
+  display: flex;
+  align-items: center;
+}
+
+.executionTime {
+  /* "总耗时: xs" 文本 */
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-muted);
+  margin-left: var(--spacing-md);
+}
+
+.overallStatusContainer {
+  /* 规则链总体执行状态的容器 */
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-base);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+  font-size: calc(var(--font-size-base) * 1.1);
+  border-width: 1px;
+  border-style: solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.overallStatusContainer svg {
+  flex-shrink: 0;
+}
+
+/* 总体状态颜色类 (引用全局CSS变量) */
+.statusSuccess {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+  border-color: var(--color-success-border);
+}
+
+.statusPartialSuccess {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border-color: var(--color-warning-border);
+}
+
+.statusFailure {
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger-text);
+  border-color: var(--color-danger-border);
+}
+
+.statusUnknown {
+  background-color: var(--secondary-bg-color);
+  color: var(--color-muted);
+  border-color: var(--border-color-base);
+}
+
+.finalOutputSection {
+  /* 最终输出文本区域 */
+  margin-bottom: var(--spacing-xl);
+}
+
+.outputHeader,
+.stepsDetailHeader {
+  font-size: calc(var(--font-size-base) * 1.2);
+  color: var(--text-color-headings);
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px dotted var(--border-color-dotted-divider);
+  font-weight: var(--font-weight-semibold);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stepsDetailHeader {
+  margin-top: var(--spacing-lg);
+}
+
+.outputActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.copyButtonSmall {
+  composes: btn btn-xs btn-outline-secondary from global;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.sendToWorkbenchButton,
+.sendStepToWorkbenchButton {
+  composes: btn btn-xs btn-outline-primary from global;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+
+.outputTextPre {
+  /* 最终输出文本的 <pre> 区域 (如果未使用结构化渲染) */
+  composes: codeBlock from global;
+  padding: var(--spacing-md);
+  font-size: var(--font-size-base);
+  max-height: 350px;
+  background-color: var(--background-color-card);
+  margin-top: var(--spacing-xs);
+  font-family: var(--font-family-sans-serif);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  /* 确保保留换行 */
+  word-wrap: break-word;
+  /* 允许长词换行 */
+}
+
+.stepResultList {
+  list-style: none;
+  padding-left: 0;
+  margin-top: var(--spacing-sm);
+}
+
+.stepResultItem {
+  border: 1px solid var(--border-color-divider);
+  margin-bottom: var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  background-color: var(--background-color-card);
+  box-shadow: var(--box-shadow-sm);
+  transition: box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.stepResultItem:hover {
+  box-shadow: var(--box-shadow-md);
+}
+
+.stepResultItem.success {
+  border-left: 5px solid var(--color-success);
+}
+
+.stepResultItem.failure {
+  border-left: 5px solid var(--color-danger);
+}
+
+.stepHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.stepHeader:hover {
+  background-color: var(--hover-bg-color);
+}
+
+.stepTitle {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color-headings);
+  font-size: calc(var(--font-size-base) * 1.1);
+  flex-grow: 1;
+  margin-right: var(--spacing-sm);
+  line-height: 1.3;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.stepStatusControls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.stepStatusBadge {
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-pill);
+  font-size: var(--font-size-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  text-transform: capitalize;
+  color: var(--text-color-light);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.stepStatusBadge.success {
+  background-color: var(--color-success);
+}
+
+.stepStatusBadge.failure {
+  background-color: var(--color-danger);
+}
+
+.expandButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  color: var(--color-muted);
+  display: flex;
+  align-items: center;
+  border-radius: var(--border-radius-circle);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.expandButton:hover {
+  background-color: var(--secondary-bg-color);
+  color: var(--text-color-base);
+}
+
+.stepDetailsContent {
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--border-color-light);
+  background-color: var(--secondary-bg-color);
+}
+
+.stepDetailItem {
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.stepDetailItem:last-child {
+  margin-bottom: 0;
+}
+
+.stepDetailItem strong {
+  font-weight: var(--font-weight-medium);
+  color: var(--secondary-text-color);
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.codeBlockJson,
+.codeBlockSmall,
+.stepSnippetPre {
+  /* 用于步骤片段的 <pre> (如果未使用结构化渲染) */
+  composes: codeBlock from global;
+  max-height: 180px;
+  font-size: 0.85em;
+  margin-top: 0;
+  white-space: pre-wrap;
+  /* 确保片段换行 */
+  word-wrap: break-word;
+  /* 允许长词换行 */
+}
+
+.codeBlockSmall {
+  composes: codeBlockJson;
+  font-size: 0.8em;
+  max-height: 120px;
+}
+
+.errorMessageText {
+  composes: error-message from global;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: var(--spacing-sm);
+  font-size: 0.9em;
+  text-align: left;
+}
+
+.spinningIcon {
+  composes: spinning-icon from global;
+}
+
+/* --- 步骤中生成约束显示相关样式 (与LLMResultDisplay.module.css中的定义保持一致或复用) --- */
+.stepConstraintsBlock {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px dashed var(--border-color-lightest);
+}
+
+.stepConstraintsBlock strong {
+  /* "应用的生成约束:" 标签 */
+  /* 继承自 .stepDetailItem strong */
+}
+
+.stepConstraintsList {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  font-size: calc(var(--font-size-sm) * 0.95);
+}
+
+.stepConstraintItem {
+  display: flex;
+  align-items: flex-start;
+  padding: calc(var(--spacing-xs) / 1.5) 0;
+  border-bottom: 1px dotted var(--border-color-lightest);
+  gap: var(--spacing-sm);
+}
+
+.stepConstraintItem:last-child {
+  border-bottom: none;
+}
+
+.stepConstraintLabel {
+  font-weight: var(--font-weight-normal);
+  color: var(--color-muted);
+  min-width: 110px;
+  flex-shrink: 0;
+  line-height: 1.5;
+}
+
+.stepConstraintValue {
+  flex-grow: 1;
+  color: var(--text-color-paragraph);
+  word-break: break-all;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.stepConstraintStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.9em;
+  padding: 1px 4px;
+  border-radius: var(--border-radius-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.stepConstraintSatisfiedIcon {
+  color: var(--color-success);
+}
+
+.stepConstraintNotSatisfiedIcon {
+  color: var(--color-danger);
+}
+
+.stepConstraintUnknownIcon {
+  color: var(--color-muted);
+}
+
+
+/* --- 新增：用于 renderStructuredContentForChain 的结构化输出样式 --- */
+/* 这些样式应与 LLMResultDisplay.module.css 中的对应样式保持一致或共享 */
+
+.tableContainerOutput {
+  /* 用于表格的包裹容器，提供水平滚动 */
+  overflow-x: auto;
+  margin-top: var(--spacing-xs);
+  /* 与上方strong标签的间距 */
+  margin-bottom: var(--spacing-sm);
+  /* 与下方其他内容的间距 */
+  border: 1px solid var(--border-color-divider);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--background-color-card);
+  /* 表格背景，以防透明 */
+}
+
+.markdownTableOutput {
+  /* Markdown表格本身 */
+  width: 100%;
+  min-width: 450px;
+  /* 表格最小宽度，鼓励滚动而非压缩 */
+  border-collapse: collapse;
+  font-size: 0.9em;
+  /* 表格内字体可以稍小 */
+  line-height: 1.4;
+}
+
+.markdownTableOutput th,
+.markdownTableOutput td {
+  border: 1px solid var(--border-color-light);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  /* 单元格内边距调整 */
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdownTableOutput th {
+  background-color: var(--secondary-bg-color);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-color-headings);
+}
+
+.markdownTableOutput tbody tr:nth-child(even) {
+  background-color: var(--background-color-body);
+  /* 与 fieldset 背景一致，或更浅 */
+}
+
+.markdownTableOutput tbody tr:hover {
+  background-color: var(--hover-bg-color);
+}
+
+.codeBlockOutput {
+  /* 用于XML等代码块的基础样式 */
+  composes: codeBlock from global;
+  /* 继承全局代码块样式 */
+  max-height: 250px;
+  /* 调整最大高度 */
+  font-size: 0.85em;
+  /* 字体可以稍小 */
+  margin-top: var(--spacing-xs);
+}
+
+.xmlCodeOutput {
+  /* XML特定代码块样式 (如果需要覆盖 .codeBlockOutput) */
+  /* composes: codeBlockOutput; */
+}
+
+.bulletListOutput,
+.numberedListOutput {
+  /* 列表样式 */
+  margin-top: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+  padding-left: var(--spacing-lg);
+  /* 标准列表缩进 */
+  line-height: 1.5;
+  color: var(--text-color-paragraph);
+  font-size: 0.9em;
+  /* 列表字体可以稍小 */
+}
+
+.bulletListOutput {
+  list-style-type: disc;
+}
+
+.numberedListOutput {
+  list-style-type: decimal;
+}
+
+.bulletListOutput li,
+.numberedListOutput li {
+  margin-bottom: calc(var(--spacing-xs) / 2);
+  /* 列表项之间更紧凑的间距 */
+}

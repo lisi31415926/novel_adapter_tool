@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" /> 
+    {/* */}
+    {/* */}
+    {/* */}
+    {/* */}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <title>AI小说改编工具</title>
+
+    <meta name="description" content="一款强大的人工智能辅助工具，专为小说内容的深度分析、改编、风格转换和自动化内容生成而设计。" />
+    
+    {/* 确保主题颜色与 global.css 中的 --color-primary 匹配 */}
+    <meta name="theme-color" content="#007bff" /> 
+    
+    <meta name="keywords" content="AI, 小说改编, 内容生成, 文本分析, 写作辅助, 人工智能, Novel Adaptation, AI Writing Tool, LLM" />
+
+    {/* 可选：作者信息 */}
+    {/* <meta name="author" content="Your Project Name or Team"> */}
+
+    {/* 如果应用是 PWA，链接到 manifest.json */}
+    {/* <link rel="manifest" href="/manifest.json" /> */}
+
+    {/* 可选：预加载关键资源 */}
+    {/* <link rel="preload" href="/assets/main-font.woff2" as="font" type="font/woff2" crossorigin="anonymous"> */}
+
+  </head>
+  <body>
+    <div id="root">
+      {/* 初始加载提示，改善用户体验 */}
+      <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #f8f9fa; font-family: sans-serif; color: #555; z-index: 9999;">
+        <svg width="48" height="48" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 16px; animation: spin 1s linear infinite;"><path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z" fill="#007bff"/></svg>
+        <p style="font-size: 1.1em;">正在加载 AI 小说改编工具...</p>
+        <p style="font-size: 0.9em; margin-top: 8px;">请稍候片刻</p>
+        <style>@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }</style>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+    <noscript>
+      <div style="text-align: center; padding: 20px; font-family: sans-serif; background-color: #fff3cd; color: #664d03; border: 1px solid #ffe69c;">
+        <strong>此应用程序需要启用 JavaScript 才能正常运行。</strong><br />
+        请在您的浏览器设置中启用 JavaScript，然后刷新页面。
+      </div>
+    </noscript>
+  </body>
+</html>

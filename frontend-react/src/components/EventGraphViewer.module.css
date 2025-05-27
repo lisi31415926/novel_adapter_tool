@@ -1,0 +1,290 @@
+/* frontend-react/src/components/EventGraphViewer.module.css */
+
+.graphContainer {
+    background-color: var(--background-color-card);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color-base);
+    box-shadow: var(--box-shadow-sm);
+    margin-top: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+    height: 60vh; /* 默认高度为视口高度的60% */
+    max-height: 700px; /* 最大高度限制 */
+    position: relative; /* 用于内部绝对定位的加载提示 */
+}
+
+.loadingState,
+.noDataState,
+.emptyGraphPlaceholder {
+    composes: status-message-overlay from global;
+    background-color: rgba(var(--background-color-card-rgb), 0.85); /* 背景可以稍微不透明一些 */
+    border: none;
+    box-shadow: none;
+    padding: var(--spacing-xl) var(--spacing-md);
+    min-height: 100px; /* 提示信息的最小高度 */
+    font-size: var(--font-size-base);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10; /* 确保在canvas之上 */
+    border-radius: var(--border-radius-md); /* 继承父容器圆角 */
+}
+
+.loadingState .spinning-icon {
+    composes: spinning-icon from global;
+}
+
+.graphHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md); /* 调整与下方内容的间距 */
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color-divider);
+    flex-shrink: 0;
+    flex-wrap: wrap; /* 允许在小屏幕上换行 */
+    gap: var(--spacing-md); /* 标题和控件之间的间距 */
+}
+
+.graphHeader h4 {
+    font-size: var(--font-size-base);
+    color: var(--text-color-headings);
+    margin: 0;
+    font-weight: var(--font-weight-semibold);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-grow: 1; /* 允许标题占据一些空间，但控件优先 */
+    min-width: 150px; /* 防止标题被过度压缩 */
+}
+.graphHeader h4 svg {
+    color: var(--color-accent-orange, var(--color-warning)); /* 事件图谱用橙色系图标 */
+}
+
+/* 用于包裹所有头部右侧控件的容器 */
+.graphControls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg); /* 筛选控件和操作按钮组之间的间距 */
+    flex-wrap: wrap; /* 允许控件换行 */
+}
+
+.filterControl {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.filterLabel {
+    font-size: var(--font-size-xs); /* 标签字体可以小一些 */
+    color: var(--secondary-text-color);
+    font-weight: var(--font-weight-medium);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    white-space: nowrap; /* 防止标签换行 */
+}
+.filterLabel svg {
+    color: var(--color-primary); /* 筛选图标颜色 */
+}
+
+.filterSelect {
+    composes: form-control form-control-sm from global; /* 继承全局表单控件样式 */
+    min-width: 150px; /* 给选择框一个最小宽度 */
+    max-width: 220px; /* 最大宽度 */
+    padding-top: calc(var(--form-control-padding-y-sm) - 1px); /* 微调padding使其更紧凑 */
+    padding-bottom: calc(var(--form-control-padding-y-sm) - 1px);
+    font-size: var(--font-size-xs); /* 选择框内字体也可以小一些 */
+}
+.filterSelect:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+
+.graphActions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm); /* 操作按钮之间的间距 */
+}
+.graphActions .btn-xs {
+    composes: btn btn-xs btn-icon from global; /* 确保继承了图标按钮样式 */
+}
+
+.helpIconGraph {
+    color: var(--color-muted);
+    cursor: help;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+.helpIconGraph:hover {
+    opacity: 1;
+    color: var(--color-primary);
+}
+
+.inlineLoadingGraph {
+    composes: info-message from global;
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    text-align: center;
+    margin-bottom: var(--spacing-xs);
+    background-color: var(--color-info-lighter);
+    border-color: var(--color-info-light);
+    color: var(--color-info-dark);
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    position: absolute;
+    top: calc(var(--spacing-md) + 45px); /* 根据头部实际高度调整 */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    box-shadow: var(--box-shadow-sm);
+}
+
+.networkCanvas {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%; /* Canvas will take full height of its flex parent */
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--background-color-body);
+    position: relative; /* For placeholder text */
+}
+
+/* --- EventDetailModal 样式 --- */
+.modalOverlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.65);
+    display: flex; align-items: center; justify-content: center;
+    z-index: var(--z-index-modal, 1050); padding: var(--spacing-md);
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.25s ease-out, visibility 0s linear 0.25s;
+}
+.modalOverlay[data-visible="true"] { /* TSX 中使用 data-visible={isOpen} */
+    opacity: 1; visibility: visible; transition-delay: 0s;
+}
+
+.modalContent {
+    background-color: var(--background-color-card); padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md); box-shadow: var(--box-shadow-overlay);
+    width: 100%; max-width: 600px; max-height: 85vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    border: 1px solid var(--border-color-base);
+    transform: scale(0.95) translateY(10px); opacity: 0;
+    transition: transform 0.3s 0.05s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease-out;
+}
+.modalOverlay[data-visible="true"] .modalContent {
+    transform: scale(1) translateY(0); opacity: 1;
+}
+
+.modalHeader {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: var(--spacing-md); border-bottom: 1px solid var(--border-color-divider);
+    margin-bottom: var(--spacing-md); flex-shrink: 0;
+}
+.modalTitle {
+    font-size: var(--font-size-lg); color: var(--text-color-headings);
+    font-weight: var(--font-weight-semibold); margin: 0;
+    display: inline-flex; align-items: center; gap: var(--spacing-sm);
+}
+.modalTitleIcon { color: var(--color-primary); } /* Or var(--color-accent-orange) for events */
+.modalCloseButton {
+    composes: btn btn-icon from global; background: none; border: none;
+    color: var(--color-muted); padding: var(--spacing-xs);
+}
+.modalCloseButton:hover { color: var(--text-color-base); background-color: var(--hover-bg-color); }
+
+.modalBody {
+    flex-grow: 1; overflow-y: auto; line-height: 1.6;
+    padding-right: var(--spacing-sm); /* 为滚动条留出空间，如果内容多 */
+    padding-left: calc(var(--spacing-sm) / 2); /* 统一body内左边距 */
+}
+.detailItem {
+    margin-bottom: var(--spacing-md); font-size: var(--font-size-sm);
+    display: flex; align-items: flex-start; gap: var(--spacing-sm);
+}
+.detailItem svg { color: var(--color-secondary); flex-shrink: 0; margin-top: 3px; width: 14px; height: 14px; }
+.detailItem strong { font-weight: var(--font-weight-semibold); color: var(--text-color-headings); min-width: 80px; flex-shrink: 0; }
+.detailItem span, .detailItem p { color: var(--text-color-paragraph); word-break: break-word; margin: 0; }
+
+.detailFullText {
+    white-space: pre-wrap; background-color: var(--secondary-bg-color);
+    padding: var(--spacing-sm); border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color-light); max-height: 150px;
+    overflow-y: auto; flex-grow: 1;
+}
+.characterChipList { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--spacing-xs); }
+.characterChip {
+    composes: tag-item from global; background-color: var(--color-info-lighter);
+    color: var(--color-info-dark); border: 1px solid var(--color-info-light);
+    font-size: 0.85em; padding: 2px 6px;
+}
+
+.relatedEventsSection {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-md);
+    border-top: 1px dashed var(--border-color-divider);
+}
+.relatedEventsSection h5 {
+    font-size: var(--font-size-base); color: var(--text-color-headings);
+    margin-bottom: var(--spacing-sm); font-weight: var(--font-weight-semibold);
+    display: flex; align-items: center; gap: var(--spacing-xs);
+}
+.relatedEventsSection h5 svg { color: var(--color-secondary); }
+
+.relatedEventsGroup { margin-bottom: var(--spacing-sm); }
+.relatedEventsGroup h6 {
+    font-size: var(--font-size-xs); color: var(--secondary-text-color);
+    font-weight: var(--font-weight-medium); margin: 0 0 var(--spacing-xs) 0;
+    display: flex; align-items: center; gap: var(--spacing-xs);
+}
+.relatedEventsGroup h6 svg { opacity: 0.7; }
+
+.relatedEventsGroup ul { list-style: none; padding-left: var(--spacing-md); margin: 0; }
+.relatedEventsGroup li {
+    padding: calc(var(--spacing-xs) / 2) 0; font-size: var(--font-size-sm);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--spacing-sm);
+}
+
+.relatedEventButton {
+    background: none; border: none; color: var(--text-color-link);
+    text-decoration: underline; cursor: pointer; padding: 0;
+    font-size: inherit; text-align: left; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; max-width: 70%;
+}
+.relatedEventButton:hover { color: var(--text-color-link-hover); }
+
+.relationshipTypeHint {
+    font-size: 0.8em; color: var(--color-muted);
+    white-space: nowrap; font-style: italic;
+}
+
+.modalFooter {
+    display: flex; justify-content: flex-end; padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color-divider); margin-top: var(--spacing-lg);
+    flex-shrink: 0;
+}
+
+/* 响应式调整 */
+@media (max-width: 767px) {
+    .graphHeader { /* 已有 wrap 和 gap */ }
+    .graphControls { width: 100%; justify-content: space-between; gap: var(--spacing-md); }
+    .filterControl { flex-grow: 1; min-width: 180px; /* 调整最小宽度 */ }
+    .filterSelect { width: 100%; max-width: none; }
+    .graphActions { flex-shrink: 0; }
+
+    .modalContent { max-width: 95vw; max-height: 90vh; padding: var(--spacing-md); }
+    .modalBody { padding-right: calc(var(--spacing-sm) / 2); } /* 减少滚动条空间 */
+    .detailItem { flex-direction: column; align-items: flex-start; gap: var(--spacing-xs); }
+    .detailItem strong { min-width: auto; margin-bottom: 2px; }
+    .relatedEventsGroup li { flex-direction: column; align-items: flex-start; }
+    .relatedEventButton { max-width: 100%; }
+}

@@ -1,0 +1,342 @@
+/* frontend-react/src/components/CharacterGraphViewer.module.css */
+
+/* --- 图谱容器和头部通用样式 (与 EventGraphViewer 类似) --- */
+.graphContainer {
+    background-color: var(--background-color-card);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color-base);
+    box-shadow: var(--box-shadow-sm);
+    margin-top: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+    height: 60vh; /* 默认高度 */
+    max-height: 700px;
+    position: relative;
+}
+
+.loadingState,
+.noDataState,
+.emptyGraphPlaceholder {
+    composes: status-message-overlay from global;
+    background-color: rgba(var(--background-color-card-rgb), 0.85);
+    border: none;
+    box-shadow: none;
+    padding: var(--spacing-xl);
+    min-height: 100px;
+    font-size: var(--font-size-base);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    border-radius: var(--border-radius-md);
+}
+
+.loadingState .spinning-icon {
+    composes: spinning-icon from global;
+}
+
+.graphHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color-divider);
+    flex-shrink: 0;
+    flex-wrap: wrap; 
+    gap: var(--spacing-md); 
+}
+
+.graphHeader h4 {
+    font-size: var(--font-size-base);
+    color: var(--text-color-headings);
+    margin: 0;
+    font-weight: var(--font-weight-semibold);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-grow: 1; 
+    min-width: 150px; 
+}
+.graphHeader h4 svg {
+    color: var(--color-accent-purple, var(--color-primary)); /* 人物关系图谱用紫色系图标 */
+}
+
+.graphControls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+.filterControl {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.filterLabel {
+    font-size: var(--font-size-xs);
+    color: var(--secondary-text-color);
+    font-weight: var(--font-weight-medium);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    white-space: nowrap;
+}
+.filterLabel svg {
+    color: var(--color-accent-purple, var(--color-primary));
+}
+
+.filterSelect {
+    composes: form-control form-control-sm from global;
+    min-width: 150px;
+    max-width: 200px;
+    padding-top: calc(var(--form-control-padding-y-sm) - 1px);
+    padding-bottom: calc(var(--form-control-padding-y-sm) - 1px);
+    font-size: var(--font-size-xs);
+}
+.filterSelect:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.graphActions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+.graphActions .btn-xs { composes: btn btn-xs btn-icon from global; }
+
+.helpIconGraph {
+    color: var(--color-muted);
+    cursor: help;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+.helpIconGraph:hover {
+    opacity: 1;
+    color: var(--color-primary);
+}
+
+.inlineLoadingGraph {
+    composes: info-message from global;
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    text-align: center;
+    margin-bottom: var(--spacing-xs);
+    background-color: var(--color-info-lighter);
+    border-color: var(--color-info-light);
+    color: var(--color-info-dark);
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    position: absolute;
+    top: calc(var(--spacing-md) + 45px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    box-shadow: var(--box-shadow-sm);
+}
+
+.networkCanvas {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--background-color-body);
+    position: relative;
+}
+
+/* --- CharacterDetailModal 样式 --- */
+.modalOverlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.65); 
+    display: flex; align-items: center; justify-content: center;
+    z-index: var(--z-index-modal, 1050); padding: var(--spacing-md);
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.25s ease-out, visibility 0s linear 0.25s;
+}
+.modalOverlay[data-visible="true"] {
+    opacity: 1; visibility: visible; transition-delay: 0s;
+}
+
+.modalContent {
+    background-color: var(--background-color-card); padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md); box-shadow: var(--box-shadow-overlay);
+    width: 100%; max-width: 550px; max-height: 80vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    border: 1px solid var(--border-color-base);
+    transform: scale(0.95) translateY(10px); opacity: 0;
+    transition: transform 0.3s 0.05s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease-out;
+}
+.modalOverlay[data-visible="true"] .modalContent {
+    transform: scale(1) translateY(0); opacity: 1;
+}
+
+.modalHeader {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: var(--spacing-md); border-bottom: 1px solid var(--border-color-divider);
+    margin-bottom: var(--spacing-md); flex-shrink: 0;
+}
+.modalTitle {
+    font-size: var(--font-size-lg); color: var(--text-color-headings);
+    font-weight: var(--font-weight-semibold); margin: 0;
+    display: inline-flex; align-items: center; gap: var(--spacing-sm);
+}
+.modalTitleIcon { color: var(--color-accent-purple); }
+.modalCloseButton {
+    composes: btn btn-icon from global; background: none; border: none;
+    color: var(--color-muted); padding: var(--spacing-xs);
+}
+.modalCloseButton:hover { color: var(--text-color-base); background-color: var(--hover-bg-color); }
+
+.modalBody {
+    flex-grow: 1; overflow-y: auto; line-height: 1.6;
+    padding-right: var(--spacing-sm); 
+    padding-left: calc(var(--spacing-sm) / 2);
+}
+.detailItemModal {
+    margin-bottom: var(--spacing-md); font-size: var(--font-size-base);
+    display: flex; align-items: flex-start; gap: var(--spacing-sm);
+}
+.detailItemModal svg { color: var(--color-secondary); flex-shrink: 0; margin-top: 4px; width: 15px; height: 15px; }
+.detailItemModal strong { font-weight: var(--font-weight-semibold); color: var(--text-color-headings); min-width: 100px; flex-shrink: 0; }
+.detailItemModal span, .detailItemModal p { color: var(--text-color-paragraph); word-break: break-word; margin: 0; }
+
+.detailFullTextModal {
+    white-space: pre-wrap; background-color: var(--secondary-bg-color);
+    padding: var(--spacing-sm); border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color-light); max-height: 120px;
+    overflow-y: auto; flex-grow: 1; font-size: 0.95em;
+}
+.detailTagsModal { display: flex; flex-wrap: wrap; gap: var(--spacing-xs); }
+.detailTagsModal span {
+    composes: tag-item from global; background-color: var(--code-bg-color);
+    color: var(--text-color-base); border: 1px solid var(--border-color-input);
+    font-size: 0.9em;
+}
+
+/* 新增：相关人物关系列表样式 for CharacterDetailModal */
+.relatedCharactersSection {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-md);
+    border-top: 1px dashed var(--border-color-divider);
+}
+.relatedCharactersSection h5 {
+    font-size: var(--font-size-base); color: var(--text-color-headings);
+    margin-bottom: var(--spacing-sm); font-weight: var(--font-weight-semibold);
+    display: flex; align-items: center; gap: var(--spacing-xs);
+}
+.relatedCharactersSection h5 svg { color: var(--color-secondary); }
+
+.relatedCharacterListModal { /* 与 EventList 的区分 */
+    list-style: none;
+    padding-left: 0; /* 移除默认列表缩进 */
+    margin: 0;
+}
+
+.relatedCharacterItemModal {
+    padding: calc(var(--spacing-xs) / 1.5) 0; /* 上下更紧凑 */
+    font-size: var(--font-size-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs); /* 项内元素间距 */
+    border-bottom: 1px dotted var(--border-color-lightest);
+    flex-wrap: nowrap; /* 尽量不换行，但允许按钮截断 */
+}
+.relatedCharacterItemModal:last-child { border-bottom: none; }
+
+.relationTypeIconModal { /* 关系类型图标 */
+    flex-shrink: 0;
+    /* 颜色在TSX中通过内联style动态设置 */
+    margin-right: 2px; /* 与类型文字的微小间距 */
+}
+
+.relationTypeTextModal { /* 关系类型文字，如“朋友” */
+    font-size: 0.9em;
+    font-style: italic;
+    color: var(--color-muted); /* 默认颜色，可被TSX内联style覆盖 */
+    min-width: 50px; /* 给类型一个最小宽度 */
+    text-align: right; /* 类型靠右一点，如果空间允许 */
+    margin-right: var(--spacing-xs);
+}
+
+.relationWithTextModal { /* "与" 字样 */
+    font-size: 0.9em;
+    color: var(--secondary-text-color);
+    margin: 0 var(--spacing-xs);
+}
+
+.relatedCharacterButtonModal {
+    background: none; border: none; color: var(--text-color-link);
+    text-decoration: none; /* 默认无下划线 */
+    cursor: pointer; padding: 0;
+    font-size: inherit; text-align: left;
+    font-weight: var(--font-weight-medium);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-grow: 1; /* 占据剩余空间 */
+}
+.relatedCharacterButtonModal:hover {
+    color: var(--text-color-link-hover);
+    text-decoration: underline;
+}
+.moreRelationsHint {
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    font-style: italic;
+    text-align: right;
+    padding-top: var(--spacing-xs);
+}
+.noRelationsHint {
+    composes: info-message from global;
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-sm);
+    background-color: transparent;
+    border: none;
+    text-align: left;
+}
+.noRelationsHint svg { margin-right: var(--spacing-xs); }
+
+
+.modalFooter {
+    display: flex; justify-content: flex-end; padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color-divider); margin-top: var(--spacing-lg);
+    flex-shrink: 0;
+}
+
+/* 响应式调整 */
+@media (max-width: 767px) {
+    .graphHeader { /* 已有 wrap 和 gap */ }
+    .graphControls { width: 100%; justify-content: space-between; gap: var(--spacing-md); }
+    .filterControl { flex-grow: 1; min-width: 180px; }
+    .filterSelect { width: 100%; max-width: none; }
+    .graphActions { flex-shrink: 0; }
+
+    .modalContent { max-width: 95vw; max-height: 90vh; padding: var(--spacing-md); }
+    .modalBody { padding-right: calc(var(--spacing-sm) / 2); }
+    .detailItemModal { flex-direction: column; align-items: flex-start; gap: var(--spacing-xs); }
+    .detailItemModal strong { min-width: auto; margin-bottom: 2px; }
+    
+    .relatedCharacterItemModal {
+        /* 在小屏幕上，如果一行显示不下，可以考虑让文字部分换行，或调整布局 */
+        flex-wrap: wrap; /* 允许内部元素换行 */
+    }
+    .relatedCharacterButtonModal {
+        /* max-width: 100%; */ /* 如果希望按钮能完全换行 */
+    }
+    .relationTypeTextModal {
+        min-width: auto; /* 移除最小宽度，允许其收缩 */
+        text-align: left;
+        margin-right: var(--spacing-sm); /* 确保与 "与" 字的间距 */
+    }
+}

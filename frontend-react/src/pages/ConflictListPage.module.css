@@ -1,0 +1,26 @@
+/* frontend-react/src/pages/ConflictListPage.module.css */
+
+/* 继承 PageStyles.module.css 的 .pageLayout, .breadcrumb, .pageContent, .titleBar, .pageTitle 等 */
+
+.filterCollapse .ant-collapse-content-box {
+    padding-top: 16px !important; /* 调整筛选区域内部上边距 */
+    padding-bottom: 8px !important; /* 调整筛选区域内部下边距 */
+}
+
+.filterFormAntd .ant-form-item {
+    margin-bottom: 12px !important; /* 筛选表单项之间的间距 */
+}
+
+/* 如果模态框中的 Form.List 需要特定样式调整 */
+.conflictFormModal .ant-form-list-item {
+    /* background-color: #f9f9f9; */ /* 可选：给每个动态条目一个轻微背景 */
+    /* border: 1px dashed #e0e0e0; */
+    /* padding: 12px; */
+    /* border-radius: 4px; */
+    /* margin-bottom: 12px !important; */
+}
+
+.conflictFormModal .ant-form-list-item .ant-space {
+    /* 确保 Space 组件内的 Form.Item 能正确对齐 */
+    align-items: flex-start; /* 或 baseline */
+}

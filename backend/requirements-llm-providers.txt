@@ -1,0 +1,8 @@
+# backend/requirements-llm-providers.txt
+# 安装你实际需要使用的 LLM Provider SDKs
+
+openai>=1.30.0,<2.0.0
+google-generativeai>=0.6.0,<0.7.0
+anthropic>=0.29.0,<0.30.0
+groq>=0.8.0,<0.9.0
+# deepseek SDK (如果官方提供独立SDK)

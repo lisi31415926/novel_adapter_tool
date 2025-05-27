@@ -1,0 +1,244 @@
+## 一、项目名称
+
+AI 小说改编工具 (AI Novel Adaptation Tool)
+
+## 二、项目目标
+
+* **核心目标**: 构建一个强大的AI辅助工具，用于长篇小说的深度分析、结构化洞察、内容改编、风格转换及剧情分支探索。
+* **设计理念**: 模块化、可扩展性、数据驱动、人机协作、服务化。
+
+## 三、工具整体架构
+
+本工具采用前后端分离的架构，主要由以下几个层面和核心服务模块组成：
+
+graph TD
+    %% 用户界面层 %%
+    UI[用户界面 (React - Vite + TypeScript)] --> API_GW[后端API网关 (FastAPI)]
+
+    subgraph "后端核心服务层 (FastAPI - Python)"
+        API_GW --> NovelMgmt[小说与数据管理服务]
+        API_GW --> AnalysisEngine[分析与洞察服务]
+        API_GW --> RuleChainEngine[规则链与执行服务]
+        API_GW --> PlanningService[智能规划与建议服务]
+        API_GW --> LLM_Orchestrator[LLM编排与提示工程服务]
+        API_GW --> ConfigService[配置管理服务]
+
+        NovelMgmt --> DB_Novel[小说结构化数据库 (SQLAlchemy + SQLite)]
+        NovelMgmt --> FileStore[文件存储 (本地 user_uploads)]
+        RuleChainEngine --> DB_Meta[规则元数据库 (SQLAlchemy + SQLite)]
+        
+        AnalysisEngine --> NovelParser[小说解析引擎 (EbookLib, BeautifulSoup)]
+        AnalysisEngine --> LocalNLP[本地NLP服务 (spaCy, jieba, snownlp)]
+        AnalysisEngine --> VectorDB_Service[向量数据库服务 (ChromaDB)]
+        AnalysisEngine --> LLM_Orchestrator
+        AnalysisEngine --> DB_Novel
+
+        LLM_Orchestrator --> PromptEng[提示工程子服务]
+        LLM_Orchestrator --> TokenizerSvc[Tokenizer服务 (tiktoken)]
+        LLM_Orchestrator --> LLM_Providers[LLM提供商抽象层]
+        LLM_Providers --> ExtLLMs[外部LLM APIs (OpenAI, Gemini, Claude, Grok, etc.)]
+        LLM_Providers --> LocalLLM[本地LLM (LM Studio 兼容接口)]
+
+        VectorDB_Service --> EmbeddingModel[嵌入模型 (Sentence Transformers / LM Studio)]
+        VectorDB_Service --> Chroma[ChromaDB向量库]
+
+        PlanningService --> LLM_Orchestrator
+        PlanningService --> RuleChainEngine 
+        PlanningService --> DB_Novel
+        PlanningService --> DB_Meta
+
+        RuleChainEngine --> LLM_Orchestrator
+        RuleChainEngine --> PostProcessingSvc[后处理服务]
+    end
+
+    subgraph "数据持久化层"
+        DB_Novel
+        DB_Meta
+        FileStore
+        Chroma
+    end
+    
+    %% 模块详细说明 (非Mermaid语法，文本描述)
+    %% A. 用户界面 (UI Layer - React): 提供用户交互操作界面，包括小说管理、工作台、规则链编辑、配置等。
+    %% B. 后端API网关 (Backend API - FastAPI): 统一的API入口，负责请求路由、校验和基本处理。
+    %% C. 小说与数据管理服务 (NovelMgmt): 负责小说、章节、剧情元素（角色、事件、关系、冲突）、剧情分支与版本等核心数据的CRUD操作。
+    %% D. 分析与洞察服务 (AnalysisEngine): 整合小说解析、本地NLP、LLM分析、向量化等功能，进行深度内容分析。
+    %% E. 规则链与执行服务 (RuleChainEngine): 负责规则链的定义、存储、参数化执行、成本预估及后处理。
+    %% F. 智能规划与建议服务 (PlanningService): 解析用户高级目标，推荐或生成规则链草稿，AI辅助生成剧情版本建议。
+    %% G. LLM编排与提示工程服务 (LLM_Orchestrator, PromptEng, TokenizerSvc): 核心AI交互模块，负责模型选择、Prompt构建与优化、Token预算与截断、调用各LLM提供商。
+    %% H. LLM提供商抽象层 (LLM_Providers): 封装对不同LLM API（云端及本地，包括Grok）的调用细节。
+    %% I. 配置管理服务 (ConfigService): 管理应用的所有配置项，包括LLM密钥、模型参数、存储路径等。
+    %% J. 数据持久化层: 包括关系型数据库（小说结构、规则链元数据）、文件存储（原始小说）和向量数据库（文本嵌入）。
+
+
+## 四、核心功能模块与开发进度
+
+说明：
+
+  * ✅ **已完成**: 功能已基本实现并通过初步测试。
+  * ⏳ **进行中**: 功能正在积极开发或已部分实现，需要进一步完善和测试。
+  * 🌟 **新进展/重点**: 最近有显著进展或当前开发焦点。
+  * ⚪ **规划中**: 已列入计划，但尚未开始实质性开发。
+  * ⚫ **远期规划**: 长期目标，优先级较低。
+  * **[B]**: 主要指后端完成度。
+  * **[F]**: 主要指前端完成度。
+
+
+
+1.  **小说导入与管理模块**
+
+      * ✅ 支持 TXT 文件导入与存储。 **[B, F]**
+      * ✅ 小说列表展示与基本信息管理。 **[F]**
+      * ✅ 小说元数据（标题、作者、简介等）编辑。 **[B, F]** (`NovelOverview.tsx`, `crud.py`, `routers/novels.py`)
+      * ✅ 小说删除功能 (包括关联数据和文件)。 **[B, F]** (`crud.py`, `routers/novels.py`)
+      * ⚫ 更多格式支持（如 EPUB, DOCX）- 远期规划 (EPUB解析逻辑已在 `novel_parser_service.py` 中初步实现)
+
+2.  **小说内容解析与结构化模块 (核心)**
+
+      * ✅ 章节自动切分与识别。 **[B]** (`novel_parser_service.py`)
+      * ✅ 核心元素提取（基于LLM与本地NLP）：
+          * ✅ 角色识别与列表。 **[B, F]**
+          * ✅ 核心事件识别与列表。 **[B, F]**
+          * ✅ 核心冲突识别与列表。 **[B, F]**
+          * ✅ 人物关系提取与图谱可视化。 **[B, F]**
+          * ✅ 主要剧情冲突ID列表存储。 **[B, F]**
+          * ✅ 世界观设定键值对编辑与存储。 **[B, F]**
+      * ✅ 章节级别情感分析与主题提炼（LLM）。(✅ 后端模型有字段，✅ API与前端展示已初步完成 (`ChapterList.tsx`, `crud.py`)) **[B, F]** (🌟 自动分析触发机制已实现 **[B]**)
+      * 🌟 **RAG支持**：
+          * ✅ 小说内容按章节/段落向量化存储。 **[B]** (`vector_store_service.py`)
+          * ✅ RAG (Retrieval Augmented Generation) 文本生成接口。 **[B, F]** (`llm_orchestrator.py`, `routers/novels.py`, `ChapterProcessorPage.tsx`)
+          * ✅ **RAG上下文选取与调用逻辑优化**。 🌟 (`vector_store_service.py`已优化中文分块与本地模型支持 **[B]**; `llm_orchestrator.py`已简化RAG调用逻辑，移除内部检索 **[B]**; `routers/novels.py` RAG流程已审查 **[B]**)。(⏳ 前端调用与结果展示待全面测试 **[F]**)
+
+3.  **LLM 文本处理与生成模块 (核心)**
+
+      * ✅ 通用文本处理接口 (`/process_text`)，支持多种预定义任务和自定义指令。 **[B, F]**
+      * ✅ 规则链驱动的多步骤文本处理：
+           * ✅ 规则链定义与管理 (CURD)。 **[B, F]**
+          * ✅ 规则链执行引擎。 **[B]**
+          * ✅ 规则链任务类型扩展与参数化。 **[B, F]**
+      * ✅ 文本处理任务类型：
+          * ✅ 文本摘要、角色提取、事件识别等基础分析任务。
+          * ✅ 视角转换、文本简化、对话提取、语气改写（正式、非正式、幽默）。
+          * ✅ 文本解释、后续情节生成、章节主题分析。
+          * ✅ **场景描写增强 (`ENHANCE_SCENE_DESCRIPTION`)**
+              * ✅ 后端Prompt指令优化。 **[B]**
+              * ✅ 前端调用流程。 **[F]**
+              * ✅ 前端专用参数配置模态框实现。 **[F]**
+              * ✅ 增强结果应用回编辑器的UX流程 (含差异预览与确认模态框)。 **[F]**
+      * 🌟 What-If剧情推演 (`WHAT_IF_PLOT_DERIVATION`) (✅ 已定义Prompt **[B]**, ✅ 前端初步调用与交互界面 (`TaskSpecificParamsInput.tsx`, `ChapterProcessorPage.tsx`) 已实现 **[F]**, ⚪ 结果展示待优化 **[F]**)
+          * ✅ 支持多种LLM Provider (包括Grok)。 **[B]**
+          * ✅ LLM参数配置与模型选择。 **[B, F]**
+          * ✅ **智能LLM调用与回退策略 (Gemini为主，Grok-3补充)**：
+              * ✅ 设计主要使用Gemini系列模型进行文本处理和生成。 **[B]**
+              * ✅ 实现当Gemini因安全策略拒绝响应时，针对特定任务自动或提示后切换到Grok-3模型的逻辑。 **[B]**
+              * ✅ 为Grok-3模型调用实现“破限词/引导词”的参数化输入和前端的可配置化。 **[B, F]**
+              * ✅ 明确Grok-3的使用范围。**[B]**
+
+4.  **剧情分支与多版本管理模块 (核心)**
+      * ✅ 剧情分支 (Plot Branch) 创建与管理。 **[B, F]**
+      * ✅ 剧情版本 (Plot Version) 创建与管理（包括基于AI建议生成）。 **[B, F]**
+      * ✅ 版本内章节拖拽排序与持久化。 **[B, F]**
+      * ✅ 版本内容摘要 (`content_summary`) JSON的键值对友好编辑。 **[F]**
+      * ⚫ 版本对比功能 (Diff View) - 远期规划
+      * ⚫ 版本合并/融合辅助 - 远期规划
+
+5.  **AI辅助改编规划模块**
+      * ✅ 改编目标输入与解析。 (🌟 `planning_service.py` 已升级至高级版本) **[B, F]**
+      * ✅ 基于目标的规则链推荐。 (🌟 `planning_service.py` 已升级至高级版本) **[B, F]**
+      * ✅ 规则链草稿生成。 (🌟 `planning_service.py` 已升级至高级版本) **[B, F]**
+      * ⏳ 规划结果的可视化与编辑 (`AdaptationPlannerPage.tsx` 初步UI/UX增强已完成，待测试反馈)。 **[F]**
+      * ⚪ 与剧情版本管理的深度整合。 **[B, F]**
+
+6.  **前端用户界面模块**
+      * ✅ 基于 React 和 Vite 构建。
+      * ✅ 核心页面已基本搭建。
+      * ✅ 核心组件已部分或全部实现。
+      * ✅ **小说详情页 (`NovelDetailPage.tsx`) 信息增强**:
+          * ✅ 世界观设定概览与编辑。 **[F]**
+          * ✅ 主要剧情冲突列表展示。 **[F]**
+          * ✅ 主要角色关系图谱可视化入口。 **[F]**
+      * ✅ **用户体验与工作流优化 - 列表功能增强**:
+          * ✅ 为角色列表页面 (`CharacterListPage.tsx` / `CharacterList.tsx`) 添加筛选与排序功能。 **[B, F]**
+          * ✅ 为事件列表页面 (`EventListPage.tsx` / `EventList.tsx`) 添加筛选与排序功能。 **[B, F]**
+          * ✅ 为冲突列表页面 (`ConflictListPage.tsx` / `ConflictList.tsx`) 添加筛选与排序功能。 **[B, F]**
+      * ⚪ 不同类型数据编辑界面的整合或便捷跳转。 **[F]**
+      * ⏳ 统一的加载与错误状态处理 (已在多个页面和组件中持续增强)。 **[F]**
+      * ⚪ 响应式设计与移动端适配优化。 **[F]**
+
+7.  **系统配置模块**
+      * ✅ LLM Provider API Key 与模型参数配置 (包括Grok引导词)。 **[B, F]**
+      * ✅ 向量存储与本地NLP模型配置。 **[B, F]**
+      * ✅ 应用通用配置（日志级别等）。 **[B, F]**
+
+## 五、技术栈
+  * **前端 (Frontend - React Ecosystem)**: (保持不变)
+  * **后端 (Backend - Python Ecosystem)**: (保持不变)
+  * **大型语言模型 (LLM) & AI**: (保持不变)
+  * **自然语言处理 (NLP - Python)**: (保持不变)
+  * **数据存储与检索**: (保持不变)
+  * **文件处理 (Python)**: (保持不变)
+  * **开发与工具**: (保持不变)
+
+## 六、近期开发计划与优先级 (截至 {{YYYY-MM-DD}} 更新) **P0 - 最高优先级 (Bug修复与核心稳定性)**
+* ⏳ **全面测试近期开发的核心功能**:
+    * ✅ 版本内章节排序 (拖拽、保存、数据一致性)。**[B,F]**
+    * ✅ `content_summary` 键值对编辑器 (数据转换、保存、类型处理)。**[F]**
+    * ✅ 场景描写增强参数模态框及流程 (参数传递、LLM调用、预览与结果替换UX)。**[B,F]**
+    * ✅ 小说详情页新增信息展示 (主要冲突内容、图谱入口跳转)。**[F]**
+    * ⚪ 后端 `prompt_engineering_service.py` 中 `build_prompts` 新逻辑 (特别是RAG, What-If) 的覆盖测试。**[B]**
+    * ✅ **列表功能增强模块** (角色、事件、冲突的筛选、排序、分页)。**[B,F]**
+    * 🌟 **RAG端到端流程测试** (从前端调用到结果展示，包括各种边界情况)。**[F,B]** (后端核心组件已更新，等待集成测试)
+    * ⏳ **AI辅助规划模块 (`AdaptationPlannerPage.tsx`) UI/UX测试与反馈收集**。[F] (初步增强完成，等待测试)
+* ⚪ 修复在上述测试过程中发现的任何阻塞性Bug或严重影响用户体验的问题。[B,F]
+* ⚪ 确保核心数据模型 (Novel, Chapter, PlotVersion, RuleChain等) 的增删改查操作在近期改动后依然稳定可靠。[B,F]
+
+**P1 - 高优先级 (核心功能完善与UX提升)**
+* ⚪ **场景描写增强 (`ENHANCE_SCENE_DESCRIPTION`) 功能打磨**: (根据P0测试反馈)
+    * ⚪ 根据P0测试反馈，持续微调 `prompt_engineering_service.py` 中的Prompt指令。**[B]**
+* ✅ **智能LLM调用与回退策略实现**: (已完成)
+* ✅ **用户体验与工作流优化 - 列表功能增强**: (已完成角色、事件、冲突列表)
+    * ⚪ **(可选)** 为人物关系列表 (`CharacterRelationshipListPage.tsx`) 添加筛选与排序功能。 **[B,F]**
+* 🌟 **AI辅助改编规划模块 - 迭代与深化**:
+    * ✅ 根据初步使用反馈，优化 `planning_service.py` 中的目标解析和规则链推荐逻辑。(已升级至高级版本) **[B]**
+    * ⏳ 考虑在 `AdaptationPlannerPage.tsx` 中如何更清晰地展示和引导用户使用规划结果。(初步UI/UX增强完成) **[F]**
+* 🌟 **小说内容解析与结构化 - 补齐与优化**:
+    * ✅ 完善章节级别情感分析与主题提炼功能的自动分析触发机制。(后台任务和服务重构完成) **[B]**
+    * ⏳ 根据RAG功能测试反馈，优化 `vector_store_service.py` 中的上下文选取策略和 `llm_orchestrator.py` 中的RAG调用逻辑。(核心组件已更新，准备测试) **[B]**
+
+**P2 - 当前开发焦点**
+* 🌟 **P2.1: What-If剧情推演 (`WHAT_IF_PLOT_DERIVATION`) 功能前端对接**:
+    * ✅ 在 `ChapterProcessorPage.tsx` 或新的专用界面中，为 `WHAT_IF_PLOT_DERIVATION` 任务提供完整的用户输入界面（包括原始剧情参考、`what_if_condition` 输入、相关参数配置）。**[F]**
+    * ⚪ 设计结果展示方式。(当前沿用 `LLMResultDisplay.tsx`，待测试后优化) **[F]**
+
+**P3 - 中低优先级 (现有功能扩展与新功能探索)**
+* ⚪ **用户体验与工作流优化 - 编辑界面整合与导航**:
+    * ⚪ 探索从列表页直接编辑条目（例如，为冲突列表、人物关系列表实现编辑模态框或页面）。**[F]**
+* ⚫ **规则链功能增强**:
+    * ⚪ 考虑支持更复杂的参数类型或动态参数获取。**[B,F]**
+    * ⚫ 规则链版本控制或分享功能。
+* ⚪ **系统配置模块增强**:
+    * ⚪ 提供更详细的LLM模型能力说明或标签。**[F]**
+    * ⏳ 实时测试LLM Provider连接状态的功能 (部分已实现，可扩展)。**[F]**
+
+**P4 - 远期规划 (长期目标与技术储备)**
+* ⚫ 小说导入支持更多格式（EPUB, DOCX）。 (EPUB解析已有初步实现)
+* ⚫ 剧情版本对比 (Diff View) 功能。
+* ⚫ 剧情版本合并/融合辅助功能。
+* ⚫ 响应式设计与移动端适配的全面优化。
+* ⚫ 国际化与本地化支持。
+* ⚫ 部署方案细化 (Docker, PostgreSQL切换等)。
+
+## 七、项目风险与应对
+
+-   LLM API成本控制: 优先使用免费或低成本模型进行测试，提供用户可选的API Key配置。**新增：Grok-3 API的获取与成本已纳入考虑，其使用范围受限。**
+-   LLM输出稳定性与可控性: 通过精心设计的Prompt、参数调整、后处理规则、以及允许用户迭代修改来提升。**新增：Gemini安全限制已有Grok-3作为特定场景补充，引导词功能已添加。**
+-   数据处理与存储效率: 对于大规模小说，数据库查询和文件处理可能存在瓶颈，需关注性能优化。
+-   用户学习曲线: 工具功能较多，需要提供清晰的用户引导和帮助文档。
+
+## 八、未来展望
+
+-   更智能的剧情分析与建议（例如，自动识别剧情漏洞、角色弧光不完整等）。
+-   更深度的多模态改编支持（例如，生成符合场景描述的图片素材建议）。
+-   用户社区与模板分享功能。
+
+

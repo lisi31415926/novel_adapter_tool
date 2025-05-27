@@ -1,0 +1,168 @@
+/* frontend-react/src/pages/ConfigurationPage.module.css */
+.configurationPage {
+    padding: 0; /* 移除外层 padding，由内部元素控制 */
+    background-color: #f0f2f5; /* Ant Design 背景色 */
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* 固定头部的 Affix 容器 */
+.headerAffix {
+    background-color: #fff; /* 给Affix背景色以避免下方内容透出 */
+    z-index: 10; /* 确保在 Tabs 之上 */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); /* 轻微阴影 */
+}
+
+.pageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px; /* Ant Design 标准内边距 */
+    /* background-color: #fff;  由 Affix 提供背景 */
+    /* border-bottom: 1px solid #f0f0f0; 移除，因为Tabs自己有边框 */
+}
+
+.pageHeader .ant-typography h2, /* 修正：AntD Title level={2} 对应 h2 */
+.pageHeader h1 { /* 保留 h1 以防直接使用 */
+    font-size: 20px !important;
+    color: rgba(0, 0, 0, 0.88) !important;
+    margin: 0 !important;
+    font-weight: 600 !important;
+    line-height: 1.4; /* 确保垂直居中 */
+}
+.pageHeader .ant-typography h2 .anticon,
+.pageHeader h1 .anticon {
+    margin-right: 12px;
+    color: #1677ff;
+    font-size: 22px;
+    vertical-align: -0.175em; /* 微调图标垂直对齐 */
+}
+
+.saveAllButtonAntd {
+    /* Ant Design Button 已有良好样式，这里可按需微调 */
+}
+.refreshButton {
+    /* Ant Design Button 已有良好样式 */
+}
+
+
+.fullPageSpinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    z-index: 9999;
+}
+.fullPageSpinner .ant-spin-text {
+    margin-top: 12px;
+    font-size: 16px;
+    color: #1677ff;
+}
+
+.fullPageError {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 64px - 50px); /* 假设头部和Tabs导航条高度 */
+    padding: 24px;
+}
+.fullPageError .ant-alert {
+    max-width: 700px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.loadingIndicator { /* 用于非全屏的加载提示 */
+    text-align: center;
+    padding: 40px;
+    font-size: 1.2em;
+    color: #888;
+}
+
+
+/* Ant Design Tabs 容器样式 */
+.configTabsAntd {
+    margin: 0 24px; /* 给Tabs左右一些边距 */
+}
+
+.configTabsAntd .ant-tabs-nav {
+    margin-bottom: 0 !important;
+    background-color: #fff;
+    border-radius: 8px 8px 0 0; /* Tabs导航条顶部圆角 */
+    padding-left: 8px; /* 给第一个tab一些左边距 */
+    padding-right: 8px; /* 给tabBarExtraContent一些右边距 */
+}
+.configTabsAntd .ant-tabs-nav::before {
+    border-bottom: 1px solid #f0f0f0 !important; /* 确保导航条下方有一条线 */
+}
+
+.configTabsAntd .ant-tabs-tab {
+    font-size: 14px;
+    padding: 12px 18px !important; /* 调整Tab内边距 */
+    margin: 0 !important;
+    border-radius: 6px 6px 0 0 !important;
+    transition: background-color 0.3s, color 0.3s;
+}
+.configTabsAntd .ant-tabs-tab .anticon {
+    margin-right: 8px;
+    font-size: 15px;
+}
+.configTabsAntd .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: #1677ff !important; /* Ant Design 主题色 */
+    font-weight: 500 !important;
+}
+.configTabsAntd .ant-tabs-ink-bar { /* 激活下划线 */
+    background: #1677ff !important;
+}
+
+
+.tabContentWrapperAntd {
+    padding: 24px;
+    background-color: #ffffff;
+    border: 1px solid #f0f0f0;
+    border-top: none;
+    border-radius: 0 0 8px 8px; /* Tab内容区底部圆角 */
+    min-height: 500px;
+}
+
+/* Section 样式 (现在由 TabContentWrapper 控制大部分) */
+.configSection {
+    margin-bottom: 24px; /* 各个配置表单之间的间距 */
+}
+.configSection:last-child {
+    margin-bottom: 0;
+}
+
+.sectionTitle {
+    font-size: 18px; /* Ant Design h5 大小 */
+    color: rgba(0, 0, 0, 0.88);
+    margin-top: 0;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: 600; /* 加粗 */
+}
+.sectionDescription {
+    font-size: 14px;
+    color: rgba(0,0,0,.65);
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.todoPlaceholderLarge { /* 保持不变 */ }
+
+/* (从 SharedSettingsForm.module.css 移到这里或确保全局可用) */
+.requiredStar {
+    color: #ff4d4f;
+    margin-left: 4px;
+    font-family: SimSun, sans-serif;
+    line-height: 1;
+    vertical-align: middle;
+}
+.helpText {
+    font-size: 12px;
+    color: rgba(0,0,0,.45);
+    margin-top: 4px;
+    line-height: 1.5;
+}

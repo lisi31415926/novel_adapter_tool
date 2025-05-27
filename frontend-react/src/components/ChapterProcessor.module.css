@@ -1,0 +1,296 @@
+/* frontend-react/src/components/ChapterProcessor.module.css */
+
+.chapterProcessorPage {
+  /* 页面整体的 padding 等可以在 PageStyles.module.css 中定义，这里可以添加特定于此页面的样式 */
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+
+.chapterTitleHighlight {
+  color: var(--bs-primary, #0d6efd); /* 使用 Bootstrap 主题色或自定义变量 */
+  font-weight: 600;
+}
+
+.editorCard,
+.processingCard,
+.toolsCard { /* 通用卡片样式 */
+  margin-bottom: 1.5rem;
+  box-shadow: var(--bs-box-shadow-sm, 0 .125rem .25rem rgba(0,0,0,.075));
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  display: flex; /* 使卡片能更好地控制内部flex子元素的高度 */
+  flex-direction: column; /* 确保Card.Body可以 flex-grow */
+}
+
+.editorCard .card-body,
+.processingCard .card-body,
+.toolsCard .card-body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* 让 Card.Body 占据剩余空间 */
+}
+
+
+.contentTextArea {
+  min-height: 300px; /* 给文本编辑区一个最小高度 */
+  font-family: var(--bs-font-monospace, monospace); /* 等宽字体，适合代码或纯文本编辑 */
+  font-size: 0.95rem;
+  line-height: 1.6;
+  resize: vertical; /* 允许用户垂直调整大小 */
+}
+
+/* 使 FloatingLabel 包裹的 textarea 能正确填满 flex 容器 */
+.editorCard .card-body .form-floating {
+  display: flex; /* 让 form-floating 自身成为 flex item */
+  flex-direction: column; /* 内部元素垂直排列 */
+  flex-grow: 1; /* 占据可用空间 */
+}
+.editorCard .card-body .form-floating textarea {
+  flex-grow: 1; /* 让 textarea 填满 form-floating */
+}
+
+
+.ruleChainSelectionArea {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: var(--bs-light-bg-subtle, #fcfcfd); /* 淡背景色 */
+  border-radius: var(--bs-border-radius, 0.375rem);
+  border: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,.175));
+}
+
+.selectedRuleChainName {
+  font-weight: bold;
+  color: var(--bs-emphasis-color, #495057); /* 强调色 */
+  background-color: var(--bs-tertiary-bg, #e9ecef);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--bs-border-radius-sm);
+  display: inline-block; /* 使背景色包裹文本 */
+  margin-left: 0.5rem;
+}
+
+.sectionSeparator {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-top: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,.175));
+}
+
+.resultsDisplaySection {
+  /* 如果需要，可以为结果显示区域添加特定样式 */
+  /* 例如，确保它在 flex 布局中能正确填充空间 */
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.resultsDisplaySection .card-body { /* 如果 LLMResultDisplay 被包裹在 Card.Body 中 */
+  overflow-y: auto; /* 允许结果区域内部滚动 */
+  max-height: 60vh; /* 或者一个合适的固定高度 */
+}
+
+.ruleChainSelectorModalBody {
+  min-height: 300px; /* 给模态框内容一个最小高度，方便列表显示 */
+  max-height: 70vh; /* 最大高度，超出则滚动 */
+  overflow-y: auto;
+}
+
+/* 折叠区域样式 */
+.toolSectionDetails {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--bs-border-radius-lg, 0.5rem); /* 使用更大的圆角 */
+  margin-bottom: 1.5rem;
+  background-color: var(--bs-white, #fff); /* 确保背景色 */
+  box-shadow: var(--bs-box-shadow-sm, 0 .125rem .25rem rgba(0,0,0,.075));
+}
+
+.toolSectionSummary {
+  padding: 0.75rem 1.25rem; /* 调整内边距 */
+  font-weight: 600; /* 加粗标题 */
+  cursor: pointer;
+  list-style: none; /* 移除默认的 disclosure-triangle */
+  display: flex; /* Flex 布局对齐图标和文字 */
+  align-items: center;
+  color: var(--bs-body-color, #212529);
+  background-color: var(--bs-light, #f8f9fa); /* 浅色背景 */
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6); /* 底部边框 */
+  border-top-left-radius: calc(0.5rem - 1px); /* 匹配父元素圆角 */
+  border-top-right-radius: calc(0.5rem - 1px);
+}
+.toolSectionDetails[open] .toolSectionSummary {
+   border-bottom-left-radius: 0; /* 打开时移除底部圆角 */
+   border-bottom-right-radius: 0;
+}
+
+
+.toolSectionSummary::-webkit-details-marker { /* 隐藏默认箭头 (Chrome/Safari) */
+  display: none;
+}
+.toolSectionSummary::before { /* 自定义箭头 */
+  content: '▶'; /* 指向右边的箭头 */
+  display: inline-block;
+  margin-right: 0.6rem; /* 与文字的间距 */
+  font-size: 0.9em;
+  transition: transform 0.2s ease-in-out;
+  color: var(--bs-secondary, #6c757d); /* 箭头颜色 */
+}
+.toolSectionDetails[open] .toolSectionSummary::before {
+  transform: rotate(90deg); /* 打开时箭头旋转90度，指向下方 */
+}
+
+.toolSectionContent {
+  padding: 1.25rem; /* 折叠内容区域的内边距 */
+  border-top: none; /* 确保与 summary 的边框不重叠 */
+}
+
+
+/* 针对你原有的 .module.css 中定义的类名，进行保留或微调 */
+/* Cost Preview Badge and Container (from your uploaded file, slightly adjusted) */
+.costPreviewContainer {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--bs-border-radius-pill, 50rem); /* 胶囊形状 */
+  font-size: 0.8em;
+  font-weight: 500;
+  margin-top: 0.5rem;
+  border: 1px solid transparent;
+}
+.costPreviewContainer svg {
+  margin-right: 0.3rem;
+}
+
+.costPreviewBadge { /* 通用样式 */ }
+
+.costCalculating {
+  background-color: var(--bs-gray-200, #e9ecef);
+  color: var(--bs-gray-700, #495057);
+  border-color: var(--bs-gray-400, #ced4da);
+}
+.costLow {
+  background-color: var(--bs-success-bg-subtle, #d1e7dd);
+  color: var(--bs-success-text-emphasis, #0f5132);
+  border-color: var(--bs-success-border-subtle, #badbcc);
+}
+.costMedium {
+  background-color: var(--bs-warning-bg-subtle, #fff3cd);
+  color: var(--bs-warning-text-emphasis, #664d03);
+  border-color: var(--bs-warning-border-subtle, #ffe69c);
+}
+.costHigh {
+  background-color: var(--bs-danger-bg-subtle, #f8d7da);
+  color: var(--bs-danger-text-emphasis, #842029);
+  border-color: var(--bs-danger-border-subtle, #f5c2c7);
+}
+.costUnknown {
+  background-color: var(--bs-secondary-bg-subtle, #e2e3e5);
+  color: var(--bs-secondary-text-emphasis, #41464b);
+  border-color: var(--bs-secondary-border-subtle, #d3d6d8);
+}
+
+.spinningIconSmall { /* 用于 CostPreviewDisplay 中的加载图标 */
+  animation: spin 1.2s linear infinite;
+}
+
+/* DryRun Modal specific styles (from your uploaded file) */
+.modalOverlay { /* 这些是自定义模态框的样式，如果你使用React-Bootstrap的Modal，则不需要 */
+  /* 如果你确实是自定义模态框，这些样式需要被保留和完善 */
+}
+.modalContent { }
+.dryRunModalContent { }
+.modalHeader { }
+.modalCloseButton { }
+.modalBody { }
+.modalSummarySection { }
+.modalOverallCost { }
+.modalTokenTotals { }
+.modalWarningsContainer { }
+.warningsList { }
+.modalStepsTableContainer { }
+.tableScrollWrapper {
+  max-height: 300px; /* 限制表格高度，超出则滚动 */
+  overflow-y: auto;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--bs-border-radius-sm);
+}
+.modalStepsTable {
+  width: 100%;
+  font-size: 0.85rem;
+  border-collapse: collapse; /* 确保边框合并 */
+}
+.modalStepsTable th, .modalStepsTable td {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  vertical-align: top; /* 顶部对齐单元格内容 */
+}
+.modalStepsTable th {
+  background-color: var(--bs-light, #f8f9fa);
+  font-weight: 600;
+  position: sticky; /* 表头吸顶 */
+  top: 0;
+  z-index: 1;
+}
+.numericalCell {
+  text-align: right !important; /* 数字右对齐 */
+}
+.dynamicEstimateMarker {
+  font-style: italic;
+  color: var(--bs-secondary, #6c757d);
+}
+.modalFooter { }
+
+/* Cost badges within modal (from your uploaded file) */
+.costBadge { /* 通用 */ }
+.costLowModal { /* 继承 .costLow 但可能颜色或边框不同 */ }
+.costMediumModal { /* 继承 .costMedium */ }
+.costHighModal { /* 继承 .costHigh */ }
+.costUnknownModal { /* 继承 .costUnknown */ }
+
+.helpIconWrapperInternal { /* 用于 DryRun Modal 内的帮助图标 */
+  display: inline-block;
+  margin-left: 4px;
+  cursor: help;
+  position: relative; /* 确保 title 提示能正确定位 */
+  top: -1px; /* 微调垂直对齐 */
+}
+.helpIconInternal {
+  color: var(--bs-secondary, #6c757d);
+}
+
+
+/* 确保一些基础的加载和错误容器样式存在 */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--bs-secondary-text, #6c757d); /* 使用Bootstrap变量或自定义 */
+  min-height: 200px; /* 给一个最小高度 */
+}
+
+/* 可以从 pageViewStyles.module.css 中继承或在此定义 */
+.spinningIcon { 
+  animation: spin 1.2s linear infinite;
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--bs-danger-text, #dc3545);
+  border: 1px solid var(--bs-danger-border-subtle, #f5c2c7);
+  background-color: var(--bs-danger-bg-subtle, #f8d7da);
+  border-radius: var(--bs-border-radius, 0.375rem);
+  min-height: 150px;
+}
+
+/* 确保通用动作按钮有一些基本样式，可以被具体按钮覆盖 */
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.9rem; /* 统一基础字号 */
+}
+
+/* 你原有文件中其他未明确列出的样式类，如果仍在 ChapterProcessor.tsx 中使用，应保留 */

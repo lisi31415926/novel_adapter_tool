@@ -1,0 +1,191 @@
+/* frontend-react/src/components/PlotVersionContentModal.module.css */
+
+.contentSummaryModalSizing {
+    max-width: 850px; /* 稍微加宽以容纳动态表单 */
+    width: 90vw;
+}
+
+.modalTitleWithIcon {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-size-lg); 
+    color: var(--text-color-headings);
+    font-weight: var(--font-weight-semibold);
+}
+.modalTitleWithIcon svg {
+    color: var(--color-primary); 
+}
+
+.modalHelpText {
+    font-size: var(--font-size-sm);
+    color: var(--text-color-paragraph);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.5;
+    padding: var(--spacing-sm);
+    background-color: var(--secondary-bg-color); 
+    border-radius: var(--border-radius-sm);
+    border-left: 3px solid var(--color-info); 
+}
+
+/* --- 动态键值对表单样式 (借鉴自 NovelOverview.module.css 中的 WorldviewEditModal) --- */
+.dynamicFormModalBody {
+    max-height: calc(75vh - 150px); /* 调整最大高度 */
+    overflow-y: auto;
+    padding-top: var(--spacing-sm) !important; 
+    padding-right: var(--spacing-sm); /* For scrollbar */
+}
+
+.entriesList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    max-height: 300px; /* 限制条目列表区域高度 */
+    overflow-y: auto;
+    padding: var(--spacing-xs);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--background-color-body);
+}
+
+.noEntriesMessage {
+    composes: info-message from global; /* Use global info style */
+    text-align: center;
+    padding: var(--spacing-md);
+    font-style: italic;
+    background-color: transparent;
+    border: 1px dashed var(--border-color-divider);
+    margin-bottom: var(--spacing-md); /* Add some space below if it's the only thing */
+}
+
+.contentEntryRow { /* Renamed from .worldviewEntryRow for specificity */
+    display: grid;
+    /* Key (1fr) | Type (auto) | Value (2fr) | RemoveBtn (auto) */
+    grid-template-columns: minmax(150px, 1.2fr) minmax(130px, auto) minmax(200px, 2fr) auto;
+    gap: var(--spacing-sm);
+    align-items: center; 
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--background-color-card); 
+    border: 1px solid var(--border-color-divider);
+}
+.contentEntryRow:hover {
+    border-color: var(--color-primary-light);
+    box-shadow: var(--box-shadow-sm);
+}
+
+.entryInputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+.entryInputGroup label {
+    font-size: var(--font-size-xs);
+    color: var(--secondary-text-color);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: 0;
+}
+/* Using pageViewStyles for inputField, selectField, textareaField */
+.entryInputGroup .inputField,
+.entryInputGroup .selectField,
+.entryInputGroup .textareaField {
+    font-size: 0.9em;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    height: auto; 
+    line-height: 1.4; 
+}
+.entryInputGroup .textareaField,
+.jsonValueTextarea { /* Specific for textarea values and object JSON editor */
+    min-height: 40px; 
+    resize: vertical;
+    font-family: var(--font-family-monospace);
+    font-size: 0.85em;
+}
+.jsonValueTextarea {
+    background-color: var(--code-bg-color-rgb, var(--code-bg-color)); /* Ensure it's distinct */
+    color: var(--text-color-base);
+}
+
+.keyInput { /* For keyName input */ }
+.typeSelect { /* For valueType select */ }
+.valueInputCell { /* Wrapper for value input */ }
+
+.removeEntryButton, .addEntryButton {
+    composes: btn btn-xs btn-icon from global;
+    align-self: center; 
+    padding: 4px !important; 
+    line-height: 1 !important;
+    height: fit-content !important;
+    border-radius: var(--border-radius-circle);
+}
+.removeEntryButton { color: var(--color-danger); }
+.removeEntryButton:hover { background-color: var(--color-danger-lighter); color: var(--color-danger-dark); }
+.addEntryButton { color: var(--color-success); }
+.addEntryButton:hover { background-color: var(--color-success-lighter); }
+
+
+.addNewEntryForm {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 1px dashed var(--border-color-divider);
+}
+.addNewEntryForm h5 {
+    font-size: var(--font-size-base);
+    color: var(--text-color-headings);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+.addNewEntryForm h5 svg {
+    color: var(--color-success);
+}
+
+/* Fallback JSON editor styles (from previous version, if user prefers/or as fallback) */
+.jsonEditTextarea { 
+    composes: form-control from global;
+    min-height: 250px;
+    max-height: calc(70vh - 250px); 
+    font-family: var(--font-family-monospace);
+    font-size: var(--font-size-sm); 
+    line-height: 1.6;
+    white-space: pre;
+    overflow: auto; 
+    background-color: var(--background-color-input);
+    color: var(--input-text-color);
+}
+.invalidJsonInput { 
+    border-color: var(--color-danger) !important;
+    box-shadow: 0 0 0 0.1rem rgba(var(--color-danger-rgb), 0.25) !important;
+}
+.jsonValidationStatus { 
+    font-size: var(--font-size-xs);
+    margin-top: var(--spacing-xs);
+    min-height: 1.2em;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--color-muted); 
+}
+.jsonValidationStatus .errorIcon { color: var(--color-danger); flex-shrink: 0; }
+.jsonValidationStatus .successIcon { color: var(--color-success); flex-shrink: 0; }
+.jsonValidationStatus .infoIcon { color: var(--color-info); flex-shrink: 0; }
+
+/* Responsive adjustments for dynamic form */
+@media (max-width: 768px) {
+    .contentEntryRow {
+        grid-template-columns: 1fr; /* Stack on small screens */
+    }
+    .removeEntryButton, .addEntryButton {
+        width: 100%; 
+        margin-top: var(--spacing-sm);
+        justify-content: center;
+    }
+    .addNewEntryForm .contentEntryRow {
+        /* Ensure add form also stacks */
+    }
+    .contentSummaryModalSizing {
+        max-width: 95vw;
+    }
+}

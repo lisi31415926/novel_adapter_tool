@@ -1,0 +1,149 @@
+/* frontend-react/src/components/ConflictList.module.css */
+/* Based on EventList.module.css and CharacterList.module.css with adjustments */
+
+.conflictListContainer {
+    margin-top: var(--spacing-md);
+    width: 100%;
+    overflow-x: auto; 
+}
+
+.conflictTable {
+    width: 100%;
+    min-width: 1000px; /* Adjusted min-width for conflict columns */
+    border-collapse: collapse;
+    background-color: var(--background-color-card);
+    border-radius: var(--border-radius-md);
+    overflow: hidden; 
+    box-shadow: var(--box-shadow-sm);
+    font-size: var(--font-size-sm);
+}
+
+.tableHeader { 
+    background-color: var(--secondary-bg-color);
+    color: var(--text-color-headings); 
+    font-weight: var(--font-weight-semibold); 
+    padding: var(--spacing-sm) var(--spacing-md); 
+    text-align: left;
+    border-bottom: 2px solid var(--border-color-base); 
+    white-space: nowrap; 
+    vertical-align: middle;
+}
+.headerIcon { 
+    margin-right: var(--spacing-xs); 
+    vertical-align: middle;
+    color: var(--color-primary); 
+    opacity: 0.8; 
+}
+
+.tableHeader.sortable { cursor: pointer; user-select: none; transition: background-color 0.15s ease, color 0.15s ease; }
+.tableHeader.sortable:hover { background-color: var(--hover-bg-color); color: var(--color-primary-dark); }
+.tableHeader.activeSort { background-color: var(--color-primary-lighter); color: var(--color-primary-darker, var(--color-primary-dark)); }
+.tableHeader.activeSort .headerIcon,
+.tableHeader.activeSort .sortIcon { color: var(--color-primary-darker, var(--color-primary-dark)); }
+
+.sortIcon { margin-left: var(--spacing-xs); vertical-align: middle; opacity: 0.6; transition: opacity 0.15s ease, color 0.15s ease; }
+.tableHeader.sortable:hover .sortIcon { opacity: 0.8; }
+.tableHeader.activeSort .sortIcon { opacity: 1; }
+
+/* Column specific header widths/alignments */
+.descriptionHeader { width: 30%; }
+.levelHeader { width: 15%; text-align: center; }
+.versionHeader { width: 15%; }
+.chapterIdHeader { width: 10%; text-align: center;}
+.actionsHeader { width: 12%; text-align: right !important; }
+
+
+.conflictRow td {
+    padding: var(--spacing-sm); 
+    border-bottom: 1px solid var(--border-color-lightest); 
+    color: var(--text-color-paragraph);
+    vertical-align: top; 
+    line-height: 1.45; 
+}
+.conflictRow:last-child td { border-bottom: none; }
+.conflictRow:hover td { background-color: var(--hover-bg-color-light, var(--hover-bg-color)); }
+
+/* Cell specific styles */
+.descriptionCell { 
+    white-space: normal; 
+    word-break: break-word; 
+    max-width: 300px; 
+}
+.levelCell { text-align: center; }
+.levelBadge {
+    composes: tag-item from global; 
+    display: inline-block;
+    padding: 3px 10px; 
+    border-radius: var(--border-radius-pill);
+    font-size: 0.85em;
+    font-weight: var(--font-weight-semibold); 
+    text-transform: capitalize;
+    border-width: 1px;
+    border-style: solid;
+    white-space: nowrap;
+}
+.levelBadge.levelMajor { background-color: var(--color-danger-lighter); color: var(--color-danger-dark); border-color: var(--color-danger-light); }
+.levelBadge.levelMinor { background-color: var(--color-warning-lighter); color: var(--color-warning-dark); border-color: var(--color-warning-light); }
+.levelBadge.levelCharacterInternal { background-color: var(--color-info-lighter); color: var(--color-info-dark); border-color: var(--color-info-light); }
+.levelBadge.levelUnknown { background-color: var(--secondary-bg-color); color: var(--color-muted); border-color: var(--border-color-divider); }
+.levelBadgeDefault { composes: levelBadge levelUnknown; } /* Fallback style */
+
+
+.participantsCell, .resolutionCell {
+    max-width: 160px; /* Reduced width for these */
+    white-space: normal;
+    word-break: break-word;
+    font-size: 0.9em;
+    color: var(--text-color-secondary);
+}
+.plotVersionCell { 
+    font-style: italic; 
+    color: var(--text-color-secondary); 
+    max-width: 100px; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    white-space: nowrap;
+}
+.plotVersionMainline { color: var(--color-success-dark); font-weight: var(--font-weight-medium); }
+.plotVersionNameText { color: var(--color-info-dark); }
+.plotVersionUnknown { color: var(--color-muted-dark); }
+
+.chapterIdCell {
+    text-align: center;
+    font-style: italic;
+    color: var(--text-color-muted);
+}
+
+.actionsCell { text-align: right; white-space: nowrap; width: 12%;}
+.actionButtonSmall { 
+    composes: btn btn-xs from global; 
+    margin-left: var(--spacing-xs); 
+    font-size: 0.9em; 
+    display: inline-flex; 
+    align-items: center;
+    gap: var(--spacing-xxs);
+}
+.actionButtonSmall svg { width: 13px; height: 13px; }
+
+.notAvailable { color: var(--color-muted); font-style: italic; font-size: 0.9em; }
+
+/* Responsive adjustments */
+@media (max-width: 992px) { 
+    .descriptionCell { max-width: 200px; }
+    .participantsCell, .resolutionCell, .plotVersionCell, .chapterIdCell { display: none; } 
+}
+
+@media (max-width: 768px) {
+    .conflictTable thead { display: none; }
+    .conflictTable tr { display: block; margin-bottom: var(--spacing-lg); border: 1px solid var(--border-color-strong); border-radius: var(--border-radius-md); box-shadow: var(--shadow-sm); }
+    .conflictTable td { display: block; text-align: right; padding-left: 45%; position: relative; border-bottom: 1px dotted var(--border-color-faint); }
+    .conflictTable td:last-child { border-bottom: none; }
+    .conflictTable td::before { content: attr(data-label); position: absolute; left: var(--spacing-md); width: calc(45% - var(--spacing-lg)); padding-right: var(--spacing-sm); white-space: nowrap; text-align: left; font-weight: bold; color: var(--text-color-secondary); }
+    
+    .descriptionCell, .participantsCell, .resolutionCell, .plotVersionCell, .chapterIdCell { 
+        max-width: none; text-align: right; 
+        display: block; 
+    } 
+    .actionsCell { text-align: center; padding-left: 0; }
+    .actionsCell::before { display: none; }
+}

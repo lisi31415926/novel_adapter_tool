@@ -1,0 +1,232 @@
+/* frontend-react/src/components/configuration/UserDefinedLLMConfigForm.module.css */
+
+/* 模态框表单的整体容器样式 */
+.modalFormContainer {
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 600px; /* 您可以根据需要调整最大宽度 */
+    margin: 20px auto; /* 用于独立展示时的居中，在模态框中可能不需要 */
+    border: 1px solid #e0e0e0;
+}
+
+/* 表单标题样式 */
+.formTitle {
+    font-size: 1.5em;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* 表单网格布局，用于排列标签和输入框 */
+.llmConfigForm .formGrid {
+    display: grid;
+    grid-template-columns: 1fr; /* 默认单列，适用于窄屏 */
+    gap: 15px 20px; /* 行间距和列间距 */
+}
+
+/* 在较宽屏幕上，表单可以变为两列 */
+@media (min-width: 600px) {
+    .llmConfigForm .formGrid {
+        grid-template-columns: repeat(2, 1fr); /* 两列布局 */
+    }
+}
+
+/* 表单字段的容器 */
+.formField {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px; /* 与 .formGrid 的 gap 结合，或单独控制 */
+}
+
+/* 标签样式 */
+.formField label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #454545;
+    font-size: 0.9em;
+}
+
+/* 必填项星号样式 */
+.requiredStar {
+    color: #d9534f; /* 红色星号 */
+    margin-left: 2px;
+}
+
+/* 输入框、下拉框和文本区域的通用样式 */
+.llmConfigForm input[type="text"],
+.llmConfigForm input[type="password"],
+.llmConfigForm input[type="number"],
+.llmConfigForm input[type="url"], /* 如果 base_url 类型是 url */
+.llmConfigForm select,
+.llmConfigForm textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* 确保 padding 和 border 不会增加元素的总宽度 */
+    font-size: 0.95em;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.llmConfigForm input:focus,
+.llmConfigForm select:focus,
+.llmConfigForm textarea:focus {
+    border-color: #007bff; /* 焦点时的边框颜色 */
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* 焦点时的阴影效果 */
+    outline: none; /* 移除默认的轮廓 */
+}
+
+/* 输入框错误时的样式 */
+.inputError {
+    border-color: #d9534f !important; /* 覆盖焦点样式 */
+    background-color: #fdf spezifisch2; /* 轻微的红色背景 */
+}
+
+/* 校验错误信息样式 */
+.errorMessage {
+    color: #d9534f;
+    font-size: 0.8em;
+    margin-top: 4px;
+}
+
+/* 辅助提示文本样式 */
+.helpText {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* 复选框组样式 */
+.checkboxGroup {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    grid-column: 1 / -1; /* 如果在网格布局中，让其占据整行 */
+}
+
+.checkboxLabel {
+    display: flex;
+    align-items: center;
+    font-weight: normal;
+    font-size: 0.9em;
+    color: #333;
+    cursor: pointer;
+}
+
+.checkboxLabel input[type="checkbox"] {
+    margin-right: 8px;
+    width: auto; /* 覆盖全局的 input width: 100% */
+    cursor: pointer;
+}
+
+/* 备注文本区域的特定样式 */
+.llmConfigForm textarea {
+    min-height: 80px; /* 最小高度 */
+    resize: vertical; /* 允许垂直调整大小 */
+}
+
+/* 表单操作按钮区域样式 */
+.formActions {
+    display: flex;
+    justify-content: flex-end; /* 按钮靠右对齐 */
+    gap: 10px;
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+    grid-column: 1 / -1; /* 如果在网格布局中，让其占据整行 */
+}
+
+/* 按钮通用样式 */
+.formActions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+/* 提交按钮样式 */
+.submitButton {
+    background-color: #007bff; /* 主题蓝色 */
+    color: white;
+}
+
+.submitButton:hover {
+    background-color: #0056b3;
+}
+
+.submitButton:disabled {
+    background-color: #b0c4de; /* 浅蓝色，表示禁用 */
+    cursor: not-allowed;
+}
+
+/* 测试按钮样式 */
+.testButton {
+    background-color: #28a745; /* 绿色 */
+    color: white;
+}
+
+.testButton:hover {
+    background-color: #1e7e34;
+}
+
+.testButton:disabled {
+    background-color: #a3d9a5;
+    cursor: not-allowed;
+}
+
+
+/* 取消按钮样式 */
+.cancelButton {
+    background-color: #6c757d; /* 中性灰色 */
+    color: white;
+}
+
+.cancelButton:hover {
+    background-color: #545b62;
+}
+
+.cancelButton:disabled {
+    background-color: #c8cbcf;
+    cursor: not-allowed;
+}
+
+/* 信息提示文本 (例如用于 api_key_is_from_env) */
+.infoText {
+    font-size: 0.85em;
+    color: #004085; /* 深蓝色信息 */
+    background-color: #cce5ff; /* 淡蓝色背景 */
+    border: 1px solid #b8daff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+/* 用于模态框的特定样式 (如果表单在模态框中显示) */
+/* 这些样式需要配合 UserDefinedLLMConfigList.tsx 中的模态框结构 */
+.modalOverlay { /* 模态框的遮罩层 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000; /* 确保在顶层 */
+    padding: 20px; /* 避免内容紧贴边缘 */
+    overflow-y: auto; /* 如果内容过长，允许滚动 */
+}
+
+/* modalFormContainer 将作为 modalOverlay 的子元素 */
+/* .modalFormContainer 已经定义了背景、内边距、圆角和阴影 */

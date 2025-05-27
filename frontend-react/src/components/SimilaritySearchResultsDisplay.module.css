@@ -1,0 +1,333 @@
+/* frontend-react/src/components/SimilaritySearchResultsDisplay.module.css */
+
+.resultsContainer {
+    /* 整个相似性搜索结果区域的容器 */
+    margin-top: var(--spacing-lg);
+    /* 与上方搜索框或控件的间距 */
+    padding: var(--spacing-lg);
+    /* 内边距 */
+    background-color: var(--secondary-bg-color);
+    /* 使用次级背景色，与页面主要内容区有所区分 */
+    border-radius: var(--border-radius-md);
+    /* 圆角 */
+    border: 1px solid var(--border-color-base);
+    /* 边框 */
+    box-shadow: var(--box-shadow-sm);
+    /* 轻微阴影 */
+}
+
+.resultsContainer h4 {
+    /* 结果标题，例如 "与 "查询内容" 相关的结果:" */
+    margin-top: 0;
+    margin-bottom: var(--spacing-lg);
+    /* 标题与下方结果列表的间距 */
+    color: var(--text-color-headings);
+    /* 标题颜色 */
+    font-weight: var(--font-weight-semibold);
+    /* 标题字重 */
+    border-bottom: 1px solid var(--border-color-divider);
+    /* 标题下分割线 */
+    padding-bottom: var(--spacing-md);
+    /* 标题下内边距 */
+    font-size: var(--font-size-lg);
+    /* 标题字体大小 */
+    word-break: break-all;
+    /* 防止用户输入的长查询文本导致标题溢出 */
+}
+
+.resultsContainer h4 strong {
+    /* 标题中加粗的查询文本部分 */
+    color: var(--color-primary);
+    /* 使用主色强调查询文本 */
+}
+
+.resultsList {
+    /* ul 元素，用于包裹所有搜索结果项 */
+    list-style: none;
+    /* 移除默认的列表项目符号 */
+    padding: 0;
+    margin: 0;
+    max-height: 450px;
+    /* 限制结果列表最大高度，超出则垂直滚动 (可根据需要调整) */
+    overflow-y: auto;
+    /* 允许垂直滚动 */
+    /* 自定义滚动条样式 (与ChapterList.module.css中的类似，确保一致性) */
+    scrollbar-width: thin;
+    /* Firefox */
+    scrollbar-color: var(--color-secondary-light) var(--secondary-bg-color);
+    /* Firefox: 滑块颜色 轨道颜色 */
+}
+
+/* Webkit (Chrome, Safari等) 浏览器滚动条样式 */
+.resultsList::-webkit-scrollbar {
+    width: 8px;
+    /* 滚动条宽度 */
+}
+
+.resultsList::-webkit-scrollbar-track {
+    background: var(--secondary-bg-color);
+    /* 滚动条轨道背景色 */
+    border-radius: var(--border-radius-sm);
+    /* 轨道圆角 */
+}
+
+.resultsList::-webkit-scrollbar-thumb {
+    background-color: var(--color-secondary-light);
+    /* 滚动条滑块颜色 */
+    border-radius: var(--border-radius-sm);
+    /* 滑块圆角 */
+    border: 2px solid var(--secondary-bg-color);
+    /* 创建滑块与轨道之间的间隙效果，使其看起来更细 */
+}
+
+
+.resultItem {
+    /* 单个搜索结果项 li */
+    margin-bottom: var(--spacing-md);
+    /* 结果条目之间的间距 */
+    padding: var(--spacing-md);
+    /* 条目内边距 */
+    background-color: var(--background-color-card);
+    /* 条目背景色，通常为白色或浅色卡片 */
+    border-radius: var(--border-radius-md);
+    /* 条目圆角 */
+    border: 1px solid var(--border-color-light);
+    /* 条目边框，比容器边框更浅 */
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    /* 添加过渡效果 */
+}
+
+.resultItem:last-child {
+    margin-bottom: 0;
+    /* 最后一个条目移除下边距 */
+}
+
+.resultItem:hover {
+    /* 鼠标悬停在结果项上时的样式 */
+    background-color: var(--hover-bg-color);
+    /* 使用全局悬停背景色 */
+    border-color: var(--color-primary-light);
+    /* 悬停时边框变为主色调的浅色 */
+    box-shadow: var(--box-shadow-light);
+    /* 悬停时轻微阴影，增加层次感 */
+}
+
+
+.resultMetadata {
+    /* 包裹来源、跳转链接、距离等元数据的容器 */
+    display: flex;
+    /* 使用flex布局使元数据项在同一行排列 */
+    align-items: center;
+    /* 垂直居中对齐元数据项 */
+    flex-wrap: wrap;
+    /* 允许元数据项在空间不足时换行 */
+    gap: var(--spacing-sm) var(--spacing-md);
+    /* 元数据项之间的垂直和水平间距 */
+    margin-bottom: var(--spacing-sm);
+    /* 元数据区与下方结果文本的间距 */
+    font-size: var(--font-size-sm);
+    /* 元数据字体大小 */
+    color: var(--color-muted);
+    /* 元数据默认使用柔和的文本颜色 */
+}
+
+.source {
+    /* 来源标签 (例如 "小说X - 章节Y - 片段Z") */
+    font-weight: var(--font-weight-medium);
+    /* 来源文字稍加粗 */
+    background-color: var(--tag-bg-color);
+    /* 使用全局标签背景色 */
+    color: var(--tag-text-color);
+    /* 使用全局标签文本颜色 */
+    padding: var(--spacing-xs) var(--spacing-sm);
+    /* 标签内边距 */
+    border-radius: var(--border-radius-pill);
+    /* 胶囊形状圆角 */
+    flex-shrink: 0;
+    /* 防止来源标签在flex布局中被过度压缩 */
+    line-height: 1.2;
+    /* 调整行高，使文字在标签内更美观 */
+    white-space: nowrap;
+    /* 通常来源描述较短，不希望换行 */
+    overflow: hidden;
+    /* 超出部分隐藏 */
+    text-overflow: ellipsis;
+    /* 超出部分用省略号表示 */
+    max-width: 250px;
+    /* 给来源一个最大宽度，避免过长时影响布局 */
+}
+
+.distance {
+    /* 相似度距离信息 */
+    font-style: italic;
+    /* 斜体显示距离 */
+    margin-left: auto;
+    /* 将距离信息推到元数据区域的最右侧 */
+    flex-shrink: 0;
+    /* 防止距离信息被压缩 */
+    white-space: nowrap;
+    /* 防止距离相关的文字换行 */
+    color: var(--secondary-text-color);
+    /* 使用次要文本颜色，不那么突出 */
+}
+
+.jumpLink {
+    /* 跳转到章节的链接 */
+    display: inline-flex;
+    /* 使内部图标和文字能良好对齐 */
+    align-items: center;
+    /* 垂直居中对齐 */
+    gap: var(--spacing-xs);
+    /* 图标和文字之间的间距 */
+    color: var(--text-color-link);
+    /* 使用全局链接颜色 */
+    text-decoration: none;
+    /* 移除默认下划线 */
+    font-size: 0.9em;
+    /* 比元数据主体文字略小，使其不那么显眼 */
+    padding: var(--spacing-xs) calc(var(--spacing-xs) * 1.5);
+    /* 调整内边距，使其看起来像一个小按钮 */
+    border-radius: var(--border-radius-sm);
+    /* 圆角 */
+    transition: background-color 0.2s ease, color 0.2s ease, text-decoration 0.2s ease;
+    /* 添加过渡效果 */
+    flex-shrink: 0;
+    /* 防止链接被压缩 */
+    border: 1px solid transparent;
+    /* 预留边框空间，防止hover时跳动 */
+}
+
+.jumpLink:hover,
+/* 鼠标悬停在跳转链接上 */
+.jumpLink:focus {
+    /* 跳转链接获得焦点时 */
+    background-color: var(--color-primary-lighter);
+    /* 使用主色的更浅版本作为悬停背景 */
+    color: var(--color-primary-dark);
+    /* 悬停时文字颜色变深 */
+    text-decoration: underline;
+    /* 悬停时显示下划线，提供更明确的链接指示 */
+    border-color: var(--color-primary-light);
+    /* 悬停时显示一个浅色边框 */
+    outline: none;
+    /* 移除默认焦点轮廓，因为已有自定义样式 */
+}
+
+.jumpLink svg {
+    /* 跳转链接中的图标 (例如 ExternalLink) */
+    /* vertical-align: middle; (flex布局已处理垂直对齐) */
+    /* 图标大小已在 TSX 中通过 size 属性设置 */
+}
+
+
+.resultText {
+    /* 搜索结果的文本内容预览 */
+    margin: 0;
+    /* 移除默认p标签边距 */
+    font-size: var(--font-size-base);
+    /* 结果文本使用基础字号 */
+    line-height: var(--line-height-base);
+    /* 基础行高，提高可读性 */
+    color: var(--text-color-paragraph);
+    /* 使用标准段落文本颜色 */
+    white-space: pre-wrap;
+    /* 保留空白符序列（包括换行符）并正常换行 */
+    word-break: break-word;
+    /* 允许长单词或URL换行，防止溢出 */
+    /* 如果需要限制显示行数并出现省略号 (对于纯CSS较难实现完美的多行截断，通常JS辅助) */
+    /* 例如，单行截断：
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    */
+    /* 多行截断 (Webkit内核浏览器):
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    */
+}
+
+.highlight {
+    /* 关键词高亮样式 */
+    background-color: var(--highlight-bg-color);
+    /* 使用全局高亮背景色 (例如浅黄色) */
+    color: var(--highlight-text-color);
+    /* 使用全局高亮文本颜色 (确保与背景有足够对比度) */
+    padding: 1px 2px;
+    /* 微调内边距，使高亮更自然 */
+    border-radius: var(--border-radius-sm);
+    /* 给高亮部分轻微圆角 */
+    font-weight: var(--font-weight-semibold);
+    /* 高亮文本可以稍加粗 */
+    /* box-shadow: 0 0 0 1px var(--highlight-bg-color); (可选，移除了这个阴影，可能过于繁琐) */
+}
+
+
+/* 加载、错误、无结果、初始提示状态的样式 */
+/* 这些类应主要从 global.css 继承其颜色、背景等基础外观 */
+/* 此处可以定义特定于此组件的布局或尺寸调整，或者如果全局类不足够用，则覆盖 */
+.loadingState,
+.errorState,
+.noResultsState,
+.initialPrompt {
+    /* 新增：初始提示状态 */
+    margin-top: var(--spacing-lg);
+    /* 与容器或上方元素的间距 */
+    padding: var(--spacing-lg);
+    /* 统一内边距 */
+    border-radius: var(--border-radius-md);
+    /* 与结果容器一致的圆角 */
+    text-align: center;
+    /* 文本居中 */
+    font-size: var(--font-size-base);
+    /* 基础字号 */
+    /* 确保这些状态消息的容器能良好地继承或应用全局消息类的样式 */
+    /* 例如，在TSX中组合类名：className={`loading-message ${styles.loadingState}`} */
+    display: flex;
+    /* 使用flex使图标和文字对齐 */
+    align-items: center;
+    /* 垂直居中 */
+    justify-content: center;
+    /* 水平居中 */
+    min-height: 80px;
+    /* 给提示一个最小高度，避免内容过少时显得太空 */
+}
+
+.loadingState {
+    composes: loading-message from global;
+    /* 继承全局加载消息样式 */
+    /* 如果需要特定调整： */
+    /* color: var(--color-muted); */
+}
+
+.errorState {
+    composes: error-message from global;
+    /* 继承全局错误消息样式 */
+}
+
+.noResultsState {
+    composes: no-data-message from global;
+    /* 继承全局无数据消息样式 */
+    /* 如果需要特定调整： */
+    font-style: normal;
+    /* 无结果提示可以不用斜体，使其更像一个陈述 */
+}
+
+.noResultsState strong {
+    /* 无结果提示中加粗的查询文本部分 */
+    color: var(--color-primary-dark, var(--color-primary));
+    /* 使用主色调强调 */
+    font-weight: var(--font-weight-semibold);
+    /* 确保加粗 */
+}
+
+.initialPrompt {
+    /* 初始提示（引导用户搜索）的样式 */
+    composes: info-message from global;
+    /* 继承全局信息提示样式 */
+    font-style: italic;
+    /* 初始提示可以带一些引导性的斜体 */
+    color: var(--color-muted);
+    /* 使用柔和的颜色 */
+}

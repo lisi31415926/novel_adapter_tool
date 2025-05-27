@@ -1,0 +1,1071 @@
+/* frontend-react/src/pages/AdaptationWorkbenchPage.module.css */
+
+/* --- 页面级容器和头部 --- */
+.workbenchPageContainer {
+    /* 继承或已由全局样式提供 */
+}
+
+.pageHeader {
+    composes: pageHeader from "./PageStyles.module.css";
+    /* 继承全局页面头部样式 */
+    margin-bottom: var(--spacing-sm);
+}
+
+.pageHeader h2 {
+    composes: pageTitle from "./PageStyles.module.css";
+    /* 继承全局页面标题样式 */
+    gap: var(--spacing-md);
+    display: flex;
+    align-items: center;
+}
+
+.workbenchGlobalActions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+    align-items: center;
+}
+
+.panelActionButton {
+    /* 用于面板头部和全局操作的按钮 */
+    composes: btn btn-xs from global;
+    padding: 3px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.dirtyIndicator {
+    color: var(--color-warning);
+    margin-left: var(--spacing-sm);
+    animation: pulseIndicator 1.8s infinite ease-in-out;
+    flex-shrink: 0;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+@keyframes pulseIndicator {
+
+    0%,
+    100% {
+        opacity: 0.6;
+        transform: scale(0.95);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+}
+
+.pageDescription {
+    composes: info-message from global;
+    font-size: var(--font-size-base);
+    margin-bottom: var(--spacing-lg);
+}
+
+/* --- 工作台三栏/响应式布局 --- */
+.workbenchLayout {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.8fr) minmax(320px, 1fr) minmax(400px, 1.5fr);
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+    transition: grid-template-columns 0.3s ease-in-out;
+}
+
+/* --- 面板全屏模式 --- */
+.workbenchLayout.fullscreenMode>.workbenchPanel:not(.fullscreenActive) {
+    display: none !important;
+}
+
+.workbenchLayout.fullscreenMode>.workbenchPanel.fullscreenActive {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 / -1 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    height: calc(100vh - var(--navbar-height, 60px) - var(--spacing-xs) - 2px);
+    max-height: calc(100vh - var(--navbar-height, 60px) - var(--spacing-xs) - 2px);
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    position: fixed;
+    top: var(--navbar-height, 60px);
+    left: 0;
+    right: 0;
+    bottom: var(--spacing-xs);
+    z-index: var(--z-index-fullscreen, 1000);
+    overflow: hidden;
+}
+
+.workbenchLayout.fullscreenMode>.workbenchPanel.fullscreenActive .panelContent {
+    /* panelHeader 高度估算为 40px (padding-sm*2 + line-height) + border 1px */
+    /* panelContent 的 padding-md*2 约为 32px (上下各16px) */
+    /* 总头部区域高度大约是 40px (panelHeader) + 上下padding (var(--spacing-md)*2) */
+    height: calc(100% - 40px - var(--spacing-md));
+    /* 减去 panelHeader 高度和 panelContent 的一个上padding */
+    max-height: calc(100% - 40px - var(--spacing-md));
+    padding-bottom: var(--spacing-md);
+    /* 确保底部padding */
+}
+
+/* 为素材区的全屏内容调整，因为它有额外的筛选排序栏 */
+.workbenchLayout.fullscreenMode>.workbenchPanel.fullscreenActive.materialsPanel .panelContent {
+    /* panelHeader(~40px) + materialsFilterSortControls(~48px) + panelContent自身上padding(~16px) */
+    height: calc(100% - 40px - 48px - var(--spacing-md));
+    max-height: calc(100% - 40px - 48px - var(--spacing-md));
+}
+
+.fullscreenHidden {
+    display: none !important;
+}
+
+.fullscreenActive {
+    /* 标记类 */
+}
+
+.workbenchPanel {
+    background-color: var(--background-color-card);
+    border: 1px solid var(--border-color-base);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--box-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    min-height: 500px;
+    max-height: calc(85vh - 120px);
+    /* 85%视口高度减去估算的页眉页脚等 */
+    overflow: hidden;
+    /* 面板自身隐藏溢出，让内部 panelContent 处理滚动 */
+    transition: opacity 0.3s ease, transform 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+.panelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--border-color-divider);
+    background-color: var(--secondary-bg-color);
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+    flex-shrink: 0;
+    min-height: 40px;
+    box-sizing: border-box;
+}
+
+.panelHeader h3 {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    color: var(--text-color-headings);
+    font-weight: var(--font-weight-semibold);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+.panelHeader h3 svg {
+    color: var(--color-primary);
+    flex-shrink: 0;
+}
+
+.panelHeaderActions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.fullscreenButton {
+    composes: btn btn-xs btn-icon from global;
+    color: var(--secondary-text-color);
+    background-color: transparent;
+    border: none;
+}
+
+.fullscreenButton:hover {
+    color: var(--text-color-base);
+    background-color: var(--hover-bg-color);
+}
+
+.panelContent {
+    /* 面板的主要内容区域 */
+    padding: var(--spacing-md);
+    flex-grow: 1;
+    /* 占据面板剩余空间 */
+    overflow-y: auto;
+    /* 允许内容区自身滚动 */
+    display: flex;
+    /* 改为flex，以便内部的滚动容器能正确撑开 */
+    flex-direction: column;
+}
+
+/* --- 参考内容区 --- */
+.referencePanel {}
+
+.referenceTitleHeader {
+    font-size: var(--font-size-base);
+    color: var(--secondary-text-color);
+    margin-bottom: var(--spacing-sm);
+    padding-bottom: var(--spacing-xs);
+    border-bottom: 1px dotted var(--border-color-dotted-divider);
+    font-weight: var(--font-weight-medium);
+}
+
+.referenceTextarea {
+    composes: form-control from global;
+    width: 100%;
+    flex-grow: 1;
+    resize: none;
+    font-family: var(--font-family-sans-serif);
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+    background-color: var(--background-color-input-disabled);
+    color: var(--text-color-paragraph);
+}
+
+/* --- 素材片段区 --- */
+.materialsPanel {}
+
+.materialsFilterSortControls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--secondary-bg-color);
+    border-bottom: 1px solid var(--border-color-divider);
+    align-items: center;
+    flex-shrink: 0;
+    min-height: 48px;
+    box-sizing: border-box;
+}
+
+.filterGroup,
+.sortGroup {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    color: var(--secondary-text-color);
+}
+
+.filterGroup label,
+.sortGroup label {
+    margin-bottom: 0;
+    font-weight: var(--font-weight-medium);
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
+.filterInput,
+.filterSelect {
+    composes: form-control from global;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    border-radius: var(--border-radius-sm);
+    height: auto;
+    line-height: 1.3;
+}
+
+.filterInput {
+    width: 150px;
+}
+
+.filterSelect {
+    min-width: 120px;
+    cursor: pointer;
+}
+
+.filterSelect option {
+    background-color: var(--background-color-body);
+    color: var(--text-color-base);
+}
+
+.sortGroup .btn {
+    composes: btn btn-xs from global;
+    padding: 3px 6px;
+    font-size: 0.8em;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.sortGroup .btn.btn-secondary {
+    background-color: var(--color-primary-darker, var(--color-primary));
+    color: var(--color-primary-contrast, white);
+    border-color: var(--color-primary-darker, var(--color-primary));
+}
+
+.sortGroup .btn.btn-outline-secondary:not(.btn-secondary) {
+    color: var(--secondary-text-color);
+    border-color: var(--border-color-input);
+}
+
+.sortGroup .btn.btn-outline-secondary:not(.btn-secondary):hover {
+    background-color: var(--hover-bg-color);
+}
+
+.clearFiltersButton {
+    composes: btn btn-xs btn-link from global;
+    color: var(--text-color-link);
+    text-decoration: none;
+    margin-left: auto;
+    font-size: 0.8em;
+    padding: 3px 5px;
+}
+
+.clearFiltersButton:hover {
+    color: var(--text-color-link-hover);
+    background-color: var(--hover-bg-color);
+}
+
+/* 修改：素材列表的滚动容器样式 */
+.materialsListScrollContainer {
+    flex-grow: 1;
+    /* 占据 .panelContent 内的剩余垂直空间 */
+    overflow-y: auto;
+    /* 必需，用于虚拟滚动 */
+    position: relative;
+    /* 用于内部绝对定位的列表项总高度容器 */
+    /* background-color: var(--background-color-body-subtle); */
+    /* 可选背景 */
+    min-height: 0;
+    /* 关键：在flex item中启用滚动 */
+}
+
+/* 原 .materialsList (如果作为ul或div直接包裹卡片)的样式可能不再完全适用 */
+/* 虚拟化后，列表项由JS动态定位 */
+
+.emptyPanelMessage {
+    composes: no-data-message from global;
+    text-align: center;
+    padding: var(--spacing-lg);
+    font-style: italic;
+    color: var(--color-muted);
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.emptyPanelMessage svg {
+    margin-bottom: var(--spacing-xs);
+}
+
+
+/* --- 主编辑区 --- */
+.mainEditorPanel {}
+
+.activeVersionNameDisplay {
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    font-weight: var(--font-weight-normal);
+    margin-left: var(--spacing-sm);
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.quillEditorContainer {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 350px;
+    border: 1px solid var(--border-color-input);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    background-color: var(--background-color-input);
+    position: relative;
+    transition: outline 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+.quillEditor {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    height: 100%;
+}
+
+.quillEditor .ql-toolbar {
+    background-color: var(--secondary-bg-color);
+    border-top-left-radius: calc(var(--border-radius-md) - 1px);
+    border-top-right-radius: calc(var(--border-radius-md) - 1px);
+    border-bottom: 1px solid var(--border-color-divider) !important;
+    padding: var(--spacing-sm) !important;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.quillEditor .ql-toolbar .ql-formats button,
+.quillEditor .ql-toolbar .ql-picker-label,
+.quillEditor .ql-toolbar .ql-picker-item {
+    padding: 3px 5px !important;
+    height: auto !important;
+    line-height: 1.2 !important;
+}
+
+.quillEditor .ql-toolbar .ql-picker {
+    height: auto !important;
+}
+
+.quillEditor .ql-container {
+    flex-grow: 1;
+    border-bottom-left-radius: calc(var(--border-radius-md) - 1px);
+    border-bottom-right-radius: calc(var(--border-radius-md) - 1px);
+    border: none !important;
+    font-size: var(--font-size-base);
+    line-height: 1.7;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    color: var(--input-text-color, var(--text-color-base));
+}
+
+.quillEditor .ql-editor {
+    padding: var(--spacing-lg) !important;
+    flex-grow: 1;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    outline: none;
+    min-height: 200px;
+}
+
+.quillEditor .ql-editor.ql-blank::before {
+    color: var(--text-color-placeholder);
+    font-style: normal;
+    left: var(--spacing-lg) !important;
+    right: var(--spacing-lg) !important;
+    font-size: var(--font-size-base);
+}
+
+.editorDroppableOver .quillEditorContainer {
+    outline: 3px dashed var(--color-primary);
+    outline-offset: -3px;
+    background-color: var(--color-primary-lighter-transparent, rgba(0, 123, 255, 0.08));
+}
+
+.editorDroppableOver .quillEditorContainer::after {
+    content: "释放素材以插入到此处";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(var(--color-primary-rgb), 0.75);
+    color: white;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--border-radius-base);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    z-index: 10;
+    pointer-events: none;
+    opacity: 1;
+}
+
+/* --- 版本历史区 --- */
+/* 修改：原 .versionHistory 作为滚动容器 */
+.versionHistoryScrollContainer {
+    /* 应用于 ref={versionHistoryParentRef} 的元素 */
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--border-color-divider);
+    flex-shrink: 0;
+    /* 固定其在flex布局中的大小 */
+    height: 180px;
+    /* 示例固定高度，根据需要调整 */
+    max-height: 200px;
+    /* 与之前一致的最大高度 */
+    overflow-y: auto;
+    /* 必需，启用虚拟滚动 */
+    position: relative;
+    /* 内部绝对定位的 ul 需要这个 */
+    background-color: var(--background-color-body);
+    /* 背景色，使其内容滚动时清晰 */
+}
+
+.versionHistoryScrollContainer h4 {
+    /* 标题现在是滚动容器的直接子元素 */
+    font-size: var(--font-size-base);
+    color: var(--secondary-text-color);
+    margin-bottom: var(--spacing-sm);
+    font-weight: var(--font-weight-medium);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 0 var(--spacing-sm);
+    /* 给标题一点左右内边距 */
+    position: sticky;
+    top: 0;
+    /* 使标题在滚动时置顶 */
+    background-color: var(--background-color-body);
+    /* 确保标题背景遮住下方滚动内容 */
+    z-index: 2;
+    /* 高于列表项 */
+    width: 100%;
+    box-sizing: border-box;
+    padding-top: var(--spacing-xs);
+    /* 避免过于贴近顶部 */
+}
+
+/* 原 .versionHistory ul 的样式现在由虚拟化库生成的内部 ul 控制其总高度 */
+
+/* 虚拟化的版本列表项 */
+.versionItemVirtual {
+    /* 应用到虚拟化的 li 元素 */
+    /* position, top, left, width, height 由虚拟化库的 style prop 提供 */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-bottom: 1px dotted var(--border-color-lightest);
+    /* 移除 margin，间距由虚拟项的 padding (在TSX中设置) 或 itemSize 估算控制 */
+    transition: background-color 0.15s ease;
+    box-sizing: border-box;
+    /* 确保 padding 和 border 不影响 height 计算 */
+}
+
+.versionItemVirtual:last-child {
+    border-bottom: none;
+}
+
+.versionItemVirtual:hover {
+    background-color: var(--hover-bg-color);
+}
+
+.versionItemVirtual.activeVersion {
+    background-color: var(--color-primary-lighter);
+    border-left: 3px solid var(--color-primary);
+    padding-left: calc(var(--spacing-sm) - 3px);
+    font-weight: var(--font-weight-semibold);
+}
+
+.versionItemVirtual.activeVersion .versionLink {
+    color: var(--color-primary-dark);
+}
+
+/* styles for new multi-tag filter */
+.tagsFilterGroup {
+    display: flex;
+    flex-direction: column;
+    /* Labels above, then container */
+    align-items: flex-start;
+    /* Align label to the start */
+    gap: var(--spacing-xs);
+    width: 100%;
+    /* Allow it to take full width if needed */
+}
+
+.tagsFilterGroup label {
+    margin-bottom: var(--spacing-xs);
+    /* Space between label and tag buttons */
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.tagsCheckboxContainer {
+    display: flex;
+    flex-wrap: wrap;
+    /* Allow tags to wrap to the next line */
+    gap: var(--spacing-xs);
+    /* Spacing between tag buttons */
+    padding: var(--spacing-xs);
+    background-color: var(--background-color-body);
+    /* Light background for the container */
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color-input);
+    width: 100%;
+    /* Take full width of its parent column */
+    max-height: 100px;
+    /* Limit height and allow scrolling if many tags */
+    overflow-y: auto;
+}
+
+.tagFilterButton {
+    composes: btn btn-xs from global;
+    /* Use global small button styles as a base */
+    background-color: var(--secondary-bg-color);
+    color: var(--secondary-text-color);
+    border: 1px solid var(--border-color-divider);
+    padding: 3px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    border-radius: var(--border-radius-pill);
+    /* Pill shape */
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.tagFilterButton:hover {
+    background-color: var(--hover-bg-color);
+    border-color: var(--color-secondary);
+}
+
+.tagFilterButton.activeTagFilter {
+    background-color: var(--color-primary);
+    color: var(--text-color-light);
+    border-color: var(--color-primary-dark);
+    font-weight: var(--font-weight-semibold);
+}
+
+.tagFilterButton.activeTagFilter:hover {
+    background-color: var(--color-primary-dark);
+}
+
+.tagFilterButton svg {
+    /* Icon size is set in TSX (size={12}) */
+    flex-shrink: 0;
+}
+
+.noTagsAvailable {
+    font-style: italic;
+    color: var(--color-muted);
+    padding: var(--spacing-xs);
+}
+
+/* 版本项内部元素的样式 (基本保持不变) */
+.versionInfoAndLoad {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-grow: 1;
+    margin-right: var(--spacing-sm);
+    overflow: hidden;
+}
+
+.versionLink {
+    background: none;
+    border: none;
+    color: var(--text-color-link);
+    cursor: pointer;
+    padding: 2px 0;
+    text-align: left;
+    font-size: var(--font-size-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.versionLink:hover {
+    text-decoration: underline;
+    color: var(--text-color-link-hover);
+}
+
+.versionTimestamp {
+    color: var(--color-muted);
+    font-size: 0.85em;
+    white-space: nowrap;
+    font-weight: var(--font-weight-normal);
+    margin-top: 1px;
+}
+
+.renameVersionForm {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-grow: 1;
+    padding: 2px 0;
+}
+
+.renameInput {
+    composes: form-control from global;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    border-radius: var(--border-radius-sm);
+    flex-grow: 1;
+    min-width: 100px;
+    background-color: var(--background-color-body);
+    height: auto;
+}
+
+.renameActionButton {
+    composes: btn btn-xs from global;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.versionItemActions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex-shrink: 0;
+}
+
+.renameVersionButton,
+.deleteVersionButton {
+    composes: btn btn-xs btn-icon from global;
+    border-radius: var(--border-radius-circle);
+}
+
+.compareSelectButton {
+    composes: btn btn-xs btn-icon from global;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    font-size: 0.75em;
+    font-weight: bold;
+    line-height: 20px;
+    text-align: center;
+    border: 1px solid var(--border-color-input);
+    background-color: var(--background-color-body-subtle);
+    color: var(--secondary-text-color);
+    margin: 0 1px;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.compareSelectButton:hover {
+    background-color: var(--hover-bg-color);
+    border-color: var(--color-secondary);
+}
+
+.compareSelectButton.compareSelectedA {
+    background-color: var(--color-info-bg);
+    color: var(--color-info-text);
+    border-color: var(--color-info);
+    font-weight: bold;
+}
+
+.compareSelectButton.compareSelectedB {
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
+    border-color: var(--color-success);
+    font-weight: bold;
+}
+
+/* 版本对比触发区域 */
+.versionComparisonTriggerArea {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    margin: var(--spacing-md) 0 var(--spacing-lg) 0;
+    background-color: var(--secondary-bg-color);
+    border-radius: var(--border-radius-base);
+    border: 1px solid var(--border-color-divider);
+}
+
+.compareLabel {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-color-paragraph);
+    margin-right: var(--spacing-xs);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.selectContainerCompare {
+    position: relative;
+    display: inline-block;
+}
+
+.versionCompareSelect {
+    composes: form-control from global;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    padding-right: calc(var(--spacing-sm) + 18px);
+    font-size: var(--font-size-sm);
+    border-radius: var(--border-radius-sm);
+    height: auto;
+    line-height: 1.3;
+    min-width: 160px;
+    max-width: 220px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: none !important;
+}
+
+.selectArrowCompare {
+    position: absolute;
+    top: 50%;
+    right: var(--spacing-xs);
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--color-muted);
+}
+
+.vsLabel {
+    color: var(--color-muted);
+    font-style: italic;
+    margin: 0 var(--spacing-xs);
+}
+
+.compareButton {
+    composes: btn btn-sm btn-secondary from global;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.clearCompareButton {
+    composes: btn btn-sm btn-link from global;
+    font-size: 0.85em;
+    padding-left: var(--spacing-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+/* 版本对比模态框/视图 */
+.versionComparisonModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(var(--background-color-body-rgb, 248, 249, 250), 0.85);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-index-modal, 1050);
+    padding: var(--spacing-md);
+    opacity: 0;
+    visibility: hidden;
+    animation: fadeInModalOverlayComparison 0.3s ease-out forwards;
+}
+
+@keyframes fadeInModalOverlayComparison {
+    to {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+.versionComparisonModalContent {
+    background-color: var(--background-color-card);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--box-shadow-overlay);
+    width: 100%;
+    max-width: 95vw;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border-color-base);
+    transform: translateY(-20px) scale(0.98);
+    opacity: 0;
+    animation: slideInModalContentComparison 0.35s 0.05s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+@keyframes slideInModalContentComparison {
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.comparisonModalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color-divider);
+    background-color: var(--secondary-bg-color);
+    flex-shrink: 0;
+}
+
+.comparisonModalHeader h3 {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    color: var(--text-color-headings);
+    font-weight: var(--font-weight-semibold);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.closeComparisonButton {
+    composes: btn btn-icon from global;
+    background: none;
+    border: none;
+    color: var(--color-muted);
+}
+
+.closeComparisonButton:hover {
+    color: var(--text-color-base);
+    background-color: var(--hover-bg-color);
+}
+
+.comparisonPanels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.comparisonPanel {
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--border-color-divider);
+    position: relative;
+}
+
+.comparisonPanel:last-child {
+    border-right: none;
+}
+
+.comparisonPanel h4 {
+    font-size: var(--font-size-base);
+    color: var(--text-color-headings);
+    margin: 0 0 var(--spacing-sm) 0;
+    font-weight: var(--font-weight-medium);
+    padding-bottom: var(--spacing-xs);
+    border-bottom: 1px dotted var(--border-color-lightest);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.comparisonTimestamp {
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    margin-left: var(--spacing-xs);
+    font-weight: normal;
+}
+
+.readOnlyQuill {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: transparent;
+}
+
+.readOnlyQuill .ql-container {
+    border: none !important;
+    font-size: var(--font-size-sm) !important;
+    line-height: 1.6 !important;
+    flex-grow: 1;
+    overflow-y: auto;
+    background-color: transparent !important;
+}
+
+.readOnlyQuill .ql-editor {
+    padding: var(--spacing-xs) 0 !important;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    min-height: auto !important;
+    background-color: transparent !important;
+    color: var(--text-color-paragraph) !important;
+}
+
+.readOnlyQuill .ql-editor.ql-blank::before {
+    display: none !important;
+}
+
+.comparisonModalFooter {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-top: 1px solid var(--border-color-divider);
+    background-color: var(--secondary-bg-color);
+    text-align: right;
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+/* DND Kit Drag Overlay */
+.dragOverlayItemWrapper {
+    /* pointerEvents: 'none'; 已在TSX中通过style设置 */
+}
+
+/* --- 响应式设计 --- */
+@media (max-width: 1199px) {
+    .workbenchLayout {
+        grid-template-columns: minmax(280px, 1fr) minmax(320px, 1fr);
+    }
+
+    .mainEditorPanel {
+        grid-column: 1 / -1;
+        margin-top: var(--spacing-lg);
+        min-height: 400px;
+    }
+
+    .comparisonPanels {
+        grid-template-columns: 1fr;
+    }
+
+    .comparisonPanel {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color-divider);
+    }
+
+    .comparisonPanel:last-child {
+        border-bottom: none;
+    }
+}
+
+@media (max-width: 767px) {
+    .workbenchLayout {
+        grid-template-columns: 1fr;
+    }
+
+    .mainEditorPanel,
+    .materialsPanel,
+    .referencePanel {
+        grid-column: span 1;
+        margin-top: var(--spacing-lg);
+    }
+
+    .referencePanel {
+        margin-top: 0;
+    }
+
+    .workbenchPanel {
+        min-height: 300px;
+        max-height: 70vh;
+    }
+
+    .panelHeader h3 {
+        font-size: var(--font-size-base);
+    }
+
+    .panelActionButton {
+        font-size: calc(var(--font-size-sm) * 0.9);
+        padding: calc(var(--spacing-xs) * 0.8) calc(var(--spacing-sm) * 0.8);
+    }
+
+    .workbenchGlobalActions .panelActionButton {
+        padding: var(--spacing-xs) calc(var(--spacing-xs) * 1.5);
+        font-size: calc(var(--font-size-sm) * 0.85);
+    }
+
+    .workbenchGlobalActions .panelActionButton svg {
+        margin-right: 2px;
+    }
+
+    .versionComparisonModalContent {
+        max-width: 98vw;
+        height: 95vh;
+    }
+
+    .comparisonModalHeader h3 {
+        font-size: var(--font-size-base);
+    }
+
+    .comparisonPanel h4 {
+        font-size: var(--font-size-sm);
+    }
+}

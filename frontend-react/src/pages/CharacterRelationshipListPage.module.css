@@ -1,0 +1,33 @@
+/* frontend-react/src/pages/CharacterRelationshipListPage.module.css */
+
+/* 继承页面通用容器样式 */
+.relationshipListPageContainer {
+    /* composes: pageContainer from "./PageStyles.module.css"; */
+    /* 在TSX中通过 className={`${pageViewStyles.pageContainer} ${styles.relationshipListPageContainer || ''}`} 应用 */
+    /* 此处可以添加 CharacterRelationshipListPage 特有的最外层容器的额外样式，如果需要 */
+}
+
+/* 页面头部操作区域的样式 */
+.pageHeaderActions {
+    composes: pageHeader from "./PageStyles.module.css";
+    /* 继承通用页眉样式 */
+}
+
+/* 初始加载或错误状态的容器 */
+.loadingOrErrorContainer {
+    composes: pageContainer from "./PageStyles.module.css"; /* 确保基本padding */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 250px;
+    text-align: center;
+    gap: var(--spacing-md);
+}
+
+/* 说明:
+  - 此CSS模块主要用于 CharacterRelationshipListPage 页面本身的布局和顶级样式。
+  - 大部分列表项的详细样式由其子组件 CharacterRelationshipList.module.css 定义。
+  - 通用页面布局（如标题、描述）应尽可能复用 PageStyles.module.css 中的类。
+  - 如果页面布局非常标准，此文件可能内容很少。
+*/

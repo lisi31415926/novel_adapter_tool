@@ -1,0 +1,29 @@
+# backend/requirements.txt
+
+# --- Web Framework & Server ---
+fastapi>=0.111.0,<0.112.0
+uvicorn[standard]>=0.29.0,<0.30.0
+pydantic>=2.7.0,<2.8.0
+pydantic-settings>=2.2.0,<2.3.0
+python-dotenv>=1.0.0,<1.1.0
+Jinja2>=3.1.0,<3.2.0
+
+# --- Database & ORM ---
+sqlmodel>=0.0.19,<0.0.20
+SQLAlchemy>=2.0.30,<2.1.0
+alembic>=1.13.0,<1.14.0 # 数据库迁移工具
+
+# --- 数据库驱动 ---
+# 根据你的数据库选择一个异步驱动
+aiosqlite>=0.20.0,<0.21.0 # 用于 SQLite (默认)
+asyncpg>=0.29.0,<0.30.0    # 用于 PostgreSQL (新增)
+
+# --- File Handling & Parsing ---
+python-multipart>=0.0.9,<0.0.10 # FastAPI 文件上传
+ebooklib>=0.18,<0.19 # EPUB 文件解析
+chardet>=5.2.0,<5.3.0 # 字符编码检测
+beautifulsoup4>=4.12.0,<4.13.0 # HTML 解析
+lxml>=5.2.0,<5.3.0 # 高性能 XML 和 HTML 解析器
+
+# --- Utilities ---
+loguru>=0.7.0,<0.8.0 # 日志库

@@ -1,0 +1,19 @@
+{
+  "name": "novel-adapter-tool-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:frontend": "cd frontend-react && cross-env NODE_OPTIONS=--trace-deprecation npm run dev",
+    "_comment_dev_script": "下面的 'dev' 脚本使用 concurrently 来同时启动后端和前端开发服务器。",
+    "_comment_concurrently_options": "可以考虑为 concurrently 添加 -n (名称) 和 -c (颜色) 选项以增强控制台输出的可读性。",
+    "dev": "concurrently --kill-others-on-fail --raw --names \"BACKEND,FRONTEND\" --prefix-colors \"bgBlue.bold,bgGreen.bold\" \"npm:dev:backend\" \"npm:dev:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3"
+  },
+  "_comment_workspace_purpose": "这个 package.json 用于管理整个项目工作区（前端和后端）的开发脚本和顶层依赖（如果有）。",
+  "_comment_backend_startup": "dev:backend 脚本启动 FastAPI 后端服务，--host 0.0.0.0 允许从局域网访问。",
+  "_comment_frontend_startup": "dev:frontend 脚本启动 Vite 前端开发服务器，--trace-deprecation 有助于发现 Node.js 的弃用API调用。"
+}

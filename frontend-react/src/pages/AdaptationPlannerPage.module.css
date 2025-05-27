@@ -1,0 +1,308 @@
+/* frontend-react/src/pages/AdaptationPlannerPage.module.css */
+
+.plannerPage {
+    /* 继承 PageStyles.module.css 的 .pageContainer 基础样式 */
+    /* 在TSX中通过 className={`${pageViewStyles.pageContainer} ${styles.plannerPage}`} 应用 */
+}
+
+/* .breadcrumbNav 样式现在从 PageStyles.module.css 中获取 */
+/* 如果需要对此页面的面包屑进行微调，可以在这里添加覆盖样式，例如： */
+/*
+.breadcrumbNav {
+    margin-bottom: var(--spacing-xl); // 覆盖默认的下边距
+}
+*/
+
+.pageHeader {
+    composes: pageHeader from "./PageStyles.module.css";
+    margin-bottom: var(--spacing-md);
+}
+.pageHeader h1 {
+    composes: pageTitle from "./PageStyles.module.css";
+    gap: var(--spacing-md);
+}
+.pageHeader h1 svg {
+    color: var(--color-accent-teal);
+}
+.pageHeader .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.pageDescription {
+    composes: info-message from global;
+    font-size: var(--font-size-base);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.6;
+}
+
+.goalInputSection {
+    padding: var(--spacing-lg);
+    background-color: var(--background-color-card);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--box-shadow-sm);
+    margin-bottom: var(--spacing-xl);
+    border: 1px solid var(--border-color-base);
+}
+.goalInputSection .formGroup {
+    margin-bottom: var(--spacing-lg);
+}
+.goalInputSection .formGroup:last-of-type {
+    margin-bottom: var(--spacing-md);
+}
+
+.goalInputSection .formGroup label {
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-color-headings);
+    font-size: calc(var(--font-size-base) * 1.1);
+    display: block;
+    margin-bottom: var(--spacing-sm);
+}
+.goalTextarea {
+    composes: form-control from global;
+    min-height: 100px;
+    line-height: 1.6;
+    font-size: var(--font-size-base);
+}
+
+.novelSelectContainer {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+/* .novelSelect (旧的 .selectField 样式已移至 global.css 或 PageStyles.module.css) */
+.novelSelectWrapper .selectField { /* 确保 selectField 继承自 global */
+    flex-grow: 1;
+    min-width: 250px;
+    max-width: 450px;
+    height: auto;
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+.novelSelectWrapper { /* 新增：用于包裹 select 和箭头的容器，以便更好地控制布局 */
+    composes: selectContainerFullWidth from "../components/TaskSpecificParamsInput.module.css"; /* 复用或定义相似样式 */
+    /* 如果 TaskSpecificParamsInput.module.css 不通用，则在此处定义 */
+    /* display: flex; flex-grow: 1; position: relative; min-width: 250px; max-width: 450px; */
+}
+
+
+.loadingText {
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    display: inline-flex; align-items: center; gap: var(--spacing-xs);
+}
+
+.actionButtonsRow {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    flex-wrap: wrap;
+}
+.actionButtonsRow .btn {
+    flex-grow: 1;
+    min-width: 200px;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--spacing-sm);
+}
+
+.plannerError {
+    composes: error-message from global;
+    margin-top: var(--spacing-md);
+    text-align: left;
+}
+
+.plannerResultsGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-xl);
+}
+@media (min-width: 1024px) {
+    .plannerResultsGrid {
+        /* grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); */
+        /* 默认让卡片按内容自适应宽度，但如果需要严格列布局，可取消注释 */
+    }
+}
+
+.plannerSection {
+    background-color: var(--background-color-card);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color-base);
+    box-shadow: var(--box-shadow-light);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xs);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color-divider);
+}
+.sectionHeader h4 {
+    font-size: var(--font-size-lg);
+    color: var(--text-color-headings);
+    margin: 0;
+    display: flex; align-items: center; gap: var(--spacing-sm);
+    font-weight: var(--font-weight-semibold);
+}
+.sectionHeader h4 svg {
+    color: var(--color-primary);
+}
+
+.loadingSection {
+    composes: loading-message from global;
+    padding: var(--spacing-lg); text-align: center; min-height: 100px;
+    background-color: transparent; border: none;
+}
+.noDataFallback {
+    composes: no-data-message from global;
+    padding: var(--spacing-lg); text-align: left; font-style: italic;
+    background-color: transparent; border: none; min-height: auto;
+}
+
+.parsedGoalSection {}
+.parsedGoalList {
+    list-style: none; padding: 0; margin: 0;
+    font-size: var(--font-size-base);
+}
+.parsedGoalList li {
+    margin-bottom: var(--spacing-sm);
+    line-height: 1.6;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+}
+.parsedGoalLabel {
+    font-weight: var(--font-weight-semibold);
+    color: var(--secondary-text-color);
+    min-width: 100px;
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: var(--spacing-xs);
+}
+.parsedGoalLabel svg { color: var(--color-secondary); opacity: 0.8; }
+.parsedGoalValue {
+    color: var(--text-color-paragraph);
+    word-break: break-word;
+}
+
+.recommendationsSection {}
+.recommendationsGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+}
+.recommendationCard {
+    background-color: var(--secondary-bg-color);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-base);
+    padding: var(--spacing-md);
+    transition: box-shadow 0.2s ease;
+}
+.recommendationCard:hover {
+    box-shadow: var(--box-shadow-md);
+}
+.recommendationCard .cardHeader h5 { font-size: var(--font-size-base); color: var(--text-color-link); }
+.relevanceScore {
+    font-size: var(--font-size-sm); font-weight: bold;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-pill);
+    background-color: var(--color-success-bg); color: var(--color-success-text);
+    border: 1px solid var(--color-success-border);
+    white-space: nowrap;
+}
+.cardDescription { font-size: var(--font-size-sm); color: var(--text-color-paragraph); margin-bottom: var(--spacing-xs); line-height: 1.5; }
+.cardReasoning { font-size: var(--font-size-xs); color: var(--color-muted); font-style: italic; margin-bottom: var(--spacing-sm); }
+.cardActions { display: flex; gap: var(--spacing-sm); margin-top: var(--spacing-sm); }
+.cardActions .btn-xs { display: inline-flex; align-items: center; gap: 3px; }
+
+.draftSection {}
+.draftContainer {}
+.draftDescription { font-size: var(--font-size-sm); color: var(--color-muted); margin-bottom: var(--spacing-md); }
+.draftStepsList {
+    list-style: none; padding: 0; margin-top: var(--spacing-sm);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-base);
+    background-color: var(--background-color-body);
+    max-height: 300px; overflow-y: auto;
+}
+.draftStepItem {
+    padding: var(--spacing-sm);
+    border-bottom: 1px dotted var(--border-color-lightest);
+    font-size: var(--font-size-sm);
+}
+.draftStepItem:last-child { border-bottom: none; }
+.stepItemHeader { display: flex; align-items: center; gap: var(--spacing-xs); margin-bottom: 3px; }
+.stepItemOrder { font-weight: bold; color: var(--color-primary); min-width: 20px; text-align: right; }
+.stepTaskIconSmall { color: var(--secondary-text-color); flex-shrink: 0; }
+.stepItemTaskType { font-weight: var(--font-weight-medium); color: var(--text-color-headings); margin-left: 2px; }
+.stepItemInputSource { font-size: 0.85em; color: var(--color-muted); margin-left: auto; background-color: var(--secondary-bg-color); padding: 1px 4px; border-radius: var(--border-radius-xs); }
+.stepItemDetails { margin-left: calc(20px + var(--spacing-md)); padding-top: var(--spacing-xs); font-size: 0.9em; color: var(--text-color-paragraph); }
+.stepItemDetails p { margin: 0 0 var(--spacing-xs) 0; line-height: 1.4; }
+.stepItemDetails p strong { font-weight: var(--font-weight-normal); color: var(--secondary-text-color); }
+.stepItemParamsPreview { font-style: italic; color: var(--color-muted); }
+
+.draftActions { display: flex; gap: var(--spacing-md); margin-top: var(--spacing-md); }
+
+.logSection {
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color-divider);
+}
+/* .logSection details > summary (保持与 pageViewStyles.detailsSummary 风格一致或复用) */
+.logSummaryToggle {
+    composes: detailsSummary from "./PageStyles.module.css"; /* 假设 PageStyles 有通用 details summary */
+    font-size: var(--font-size-sm); /* 日志的摘要可以小一点 */
+}
+.logSection h6 {
+    font-size: var(--font-size-base);
+    color: var(--secondary-text-color);
+    margin-bottom: var(--spacing-sm);
+    font-weight: var(--font-weight-medium);
+    display: flex; align-items: center; gap: var(--spacing-xs);
+}
+.logSection h6 svg { opacity: 0.7; }
+.logList {
+    list-style-type: none;
+    padding-left: var(--spacing-md);
+    margin: 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+    max-height: 150px;
+    overflow-y: auto;
+    background-color: var(--code-bg-color);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm);
+    line-height: 1.6;
+}
+.logList li {
+    margin-bottom: var(--spacing-xs);
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+.logList li:last-child { margin-bottom: 0; }
+
+@media (max-width: 768px) {
+    .plannerResultsGrid {
+        grid-template-columns: 1fr;
+    }
+    .actionButtonsRow .btn {
+        min-width: 150px;
+    }
+    .novelSelectContainer {
+        flex-direction: column; /* 在小屏幕上垂直堆叠标签和选择框 */
+        align-items: flex-start;
+    }
+    .novelSelectContainer .selectField { /* 确保selectField在小屏幕上是100%宽度 */
+         width: 100%;
+         max-width: 100%;
+    }
+}
