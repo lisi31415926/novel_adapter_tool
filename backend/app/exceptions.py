@@ -1,46 +1,39 @@
 # backend/app/exceptions.py
 
 class LLMAPIError(Exception):
-    """
-    所有 LLM Provider 相关错误的基类。
-    Base exception for all LLM Provider related errors.
-    """
+    """Base exception for LLM provider errors."""
     def __init__(self, message: str, provider: str = "Unknown"):
         self.message = message
         self.provider = provider
         super().__init__(f"LLM Provider '{self.provider}' Error: {self.message}")
 
 class LLMAuthenticationError(LLMAPIError):
-    """
-    用于认证失败（例如，无效的 API Key）。
-    For authentication errors (e.g., invalid API Key).
-    """
+    """For authentication errors."""
     pass
 
 class LLMRateLimitError(LLMAPIError):
-    """
-    用于 API 速率限制错误。
-    For API rate limit errors.
-    """
+    """For rate limit errors."""
     pass
 
 class LLMConnectionError(LLMAPIError):
-    """
-    用于网络连接问题（例如，无法访问 API 端点）。
-    For network connectivity issues (e.g., cannot reach API endpoint).
-    """
+    """For connection issues."""
     pass
 
-class LLMProviderNotFoundError(LLMAPIError):
-    """
-    当找不到指定的 LLM Provider 时抛出。
-    Raised when a specified LLM Provider cannot be found.
-    """
+class LLMProviderNotFoundError(LLMAPIError): # Not directly used in providers but good to have
+    """Raised when a specified LLM Provider cannot be found."""
     pass
 
-class ContentSafetyException(LLMAPIError):
-    """
-    当内容被提供商的安全策略阻止时，用于特定于内容的错误。
-    For content-specific errors when content is blocked by the provider's safety policies.
-    """
-    pass
+class ContentSafetyException(LLMAPIError): # This is the one we will use from app.exceptions
+    """For content-specific errors when content is blocked by the provider's safety policies."""
+    # Add constructor to match how it's used in providers, if different from LLMAPIError
+    def __init__(self, message: str, provider: str = "Unknown", model_id: Optional[str] = None, details: Optional[Any] = None,
+                 prompt_tokens: Optional[int] = None, completion_tokens: Optional[int] = None, total_tokens: Optional[int] = None,
+                 finish_reason: Optional[str] = None):
+        super().__init__(message, provider)
+        self.original_message = message # Keep original_message attribute
+        self.model_id_used = model_id
+        self.safety_details = details
+        self.prompt_tokens = prompt_tokens
+        self.completion_tokens = completion_tokens
+        self.total_tokens = total_tokens
+        self.finish_reason = finish_reason
