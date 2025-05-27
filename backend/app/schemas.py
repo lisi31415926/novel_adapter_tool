@@ -117,6 +117,12 @@ class PostProcessingRuleEnum(str, enum.Enum):
     NORMALIZE_CHINESE_PUNCTUATION_FULL_WIDTH = "normalize_chinese_punctuation_full_width" # 新增
     NORMALIZE_ENGLISH_PUNCTUATION_HALF_WIDTH = "normalize_english_punctuation_half_width" # 新增
 
+class PlotVersionComparison(BaseModel):
+    version1_id: int
+    version1_name: str
+    version2_id: int
+    version2_name: str
+    diff_output: List[str]
 
 class PredefinedTaskEnum(str, enum.Enum):
     # 与 constants.ts 和后端服务保持一致

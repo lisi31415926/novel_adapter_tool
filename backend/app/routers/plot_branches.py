@@ -1,134 +1,126 @@
-# routers/plot_branches.py
-from typing import List
+# backend/app/routers/plot_branches.py
+import logging
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import crud, schemas
+from .. import crud, schemas # models is not directly used, schemas contains Pydantic models
 from ..database import get_db
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
-    prefix="/novels/{novel_id}/plot-branches",
-    tags=["Plot Branches Management"]
+    prefix="/api/v1/plot-branches",
+    tags=["Plot Branches - 大纲分支管理"],
 )
 
 @router.post(
     "/",
-    response_model=schemas.PlotBranchRead,
+    response_model=schemas.PlotBranch,
     status_code=status.HTTP_201_CREATED,
-    summary="为小说创建新的剧情分支"
+    summary="创建一个新的大纲分支"
 )
 async def create_plot_branch(
-    novel_id: int,
-    branch: schemas.PlotBranchCreate,
+    branch_in: schemas.PlotBranchCreate,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    为指定的小说创建一个新的剧情分支。
-    - **novel_id**: 路径参数，指定小说ID。
-    - **branch**: 请求体，包含新剧情分支的详细信息。
+    为指定的小说创建一个新的大纲分支。
+    可以指定一个父分支，如果未指定，则它将成为一个顶级分支。
     """
-    if branch.novel_id != novel_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="路径中的 novel_id 与请求体中的 novel_id 不匹配。"
-        )
+    # 验证 novel_id 是否存在
+    novel = await crud.get_novel(db, novel_id=branch_in.novel_id)
+    if not novel:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {branch_in.novel_id} 的小说未找到。")
 
-    # 检查同一小说下是否存在同名分支
-    existing_branch = await crud.get_plot_branch_by_name(db, novel_id=novel_id, name=branch.name)
-    if existing_branch:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"该小说下已存在名为 '{branch.name}' 的剧情分支。"
-        )
-    
-    return await crud.create_plot_branch(db=db, branch=branch)
+    # 验证 parent_branch_id (如果提供) 是否存在且属于同一个 novel_id
+    if branch_in.parent_branch_id:
+        parent_branch = await crud.get_plot_branch(db, branch_id=branch_in.parent_branch_id)
+        if not parent_branch:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {branch_in.parent_branch_id} 的父分支未找到。")
+        if parent_branch.novel_id != branch_in.novel_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="父分支与新分支不属于同一部小说。")
 
-# 修改后的代码片段
+    return await crud.create_plot_branch(db=db, branch_in=branch_in)
+
 @router.get(
-    "/",
-    response_model=schemas.PaginatedResponse[schemas.PlotBranchRead],
-    summary="获取指定小说的所有剧情分支（分页）"
+    "/novel/{novel_id}",
+    response_model=List[schemas.PlotBranchWithLineage], # 返回带血缘关系的分支列表
+    summary="获取指定小说的所有大纲分支（树状结构）"
 )
-async def read_plot_branches(
-    novel_id: int,
-    db: AsyncSession = Depends(get_db),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(100, ge=1, le=200)
+async def read_plot_branches_for_novel(
+    novel_id: int = Path(..., description="要检索其大纲分支的小说ID"),
+    db: AsyncSession = Depends(get_db)
 ):
-    skip = (page - 1) * page_size
-    items_list, total_count = await crud.get_plot_branches_by_novel_and_count(
-        db, novel_id=novel_id, skip=skip, limit=page_size
-    )
-    total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 0
+    """
+    获取指定小说的所有大纲分支，并构建成一个层级（树状）结构。
+    """
+    novel = await crud.get_novel(db, novel_id=novel_id)
+    if not novel:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {novel_id} 的小说未找到。")
     
-    return schemas.PaginatedResponse(
-        total_count=total_count,
-        page=page,
-        page_size=page_size,
-        total_pages=total_pages,
-        items=items_list
-    )
+    # crud.get_plot_branches_for_novel_structured 应该返回树状结构
+    # 或者在这里处理扁平列表到树状结构的转换
+    # 假设 crud.get_plot_branches_for_novel_structured 已经处理
+    structured_branches = await crud.get_plot_branches_for_novel_structured(db, novel_id=novel_id)
+    return structured_branches
+
 
 @router.get(
     "/{branch_id}",
-    response_model=schemas.PlotBranchRead,
-    summary="根据ID获取剧情分支详情"
+    response_model=schemas.PlotBranch, # 或者是 PlotBranchWithVersions? 取决于需求
+    summary="获取单个大纲分支的详细信息"
 )
 async def read_plot_branch(
-    novel_id: int,
-    branch_id: int,
+    branch_id: int = Path(..., description="要检索的大纲分支ID"),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    获取单个剧情分支的详细信息。
+    通过ID获取单个大纲分支的详细信息。
+    可能需要同时加载其关联的大纲版本。
     """
-    db_branch = await crud.get_plot_branch(db=db, branch_id=branch_id)
-    if db_branch is None or db_branch.novel_id != novel_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="剧情分支未找到")
+    db_branch = await crud.get_plot_branch(db, branch_id=branch_id)
+    if db_branch is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {branch_id} 的大纲分支未找到。")
     return db_branch
+
 
 @router.put(
     "/{branch_id}",
-    response_model=schemas.PlotBranchRead,
-    summary="更新剧情分支信息"
+    response_model=schemas.PlotBranch,
+    summary="更新一个大纲分支的信息"
 )
 async def update_plot_branch(
-    novel_id: int,
     branch_id: int,
-    branch: schemas.PlotBranchUpdate,
+    branch_in: schemas.PlotBranchUpdate,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    更新一个已存在剧情分支的信息。
+    更新一个已存在的大纲分支的名称或描述。
     """
-    db_branch = await crud.get_plot_branch(db=db, branch_id=branch_id)
-    if db_branch is None or db_branch.novel_id != novel_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="剧情分支未找到")
-        
-    updated_branch = await crud.update_plot_branch(db=db, branch_id=branch_id, branch_update=branch)
+    updated_branch = await crud.update_plot_branch(db=db, branch_id=branch_id, branch_in=branch_in)
+    if updated_branch is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {branch_id} 的大纲分支未找到。")
     return updated_branch
+
 
 @router.delete(
     "/{branch_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="删除指定剧情分支"
+    summary="删除一个大纲分支"
 )
 async def delete_plot_branch(
-    novel_id: int,
     branch_id: int,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    根据ID删除一个剧情分支。
+    永久删除一个大纲分支。
+    注意：需要处理其子分支和关联的大纲版本的逻辑（例如：级联删除、设为null或禁止删除）。
+    假设 crud.delete_plot_branch 已经考虑了这些情况。
     """
-    db_branch = await crud.get_plot_branch(db=db, branch_id=branch_id)
-    if db_branch is None or db_branch.novel_id != novel_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="剧情分支未找到")
-        
-    deleted_branch = await crud.delete_plot_branch(db=db, branch_id=branch_id)
-    if not deleted_branch:
-         # 这一层检查理论上不会触发，因为上面已经检查过了，但作为保险
-         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="删除时剧情分支未找到")
-
+    success = await crud.delete_plot_branch(db, branch_id=branch_id)
+    if not success:
+        # crud.delete_plot_branch 应该在无法删除时（例如，因为存在子项且策略是禁止删除）或找不到时返回 False
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {branch_id} 的大纲分支未找到或无法删除。")
     return None

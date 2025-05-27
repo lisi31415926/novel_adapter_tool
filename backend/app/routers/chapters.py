@@ -1,121 +1,85 @@
 # backend/app/routers/chapters.py
 import logging
-from typing import List, Optional, TypeVar, Generic
-from fastapi import (
-    APIRouter, Depends, HTTPException, status, 
-    Query, Body, Path, BackgroundTasks
-)
-from pydantic import BaseModel
-import math
+from typing import List, Optional
 
-# 导入异步会话类型
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Query, BackgroundTasks, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# 导入 CRUD 操作、schemas、依赖项和服务
-from .. import crud, schemas, models
-from ..database import get_db, AsyncSessionLocal # 导入 AsyncSessionLocal
+from .. import crud, schemas
+from ..database import get_db, AsyncSessionLocal
 from ..dependencies import get_llm_orchestrator
 from ..llm_orchestrator import LLMOrchestrator
-from ..services import background_analysis_service
+from ..services import background_analysis_service, rule_application_service
+from ..services.vector_store_service import VectorStoreService, get_vector_store_service
+
 
 logger = logging.getLogger(__name__)
-
-# 为保持模块化，我们将 router 分为两个：一个用于小说下的章节，一个用于独立的章节操作
-# 这与您原始文件的结构意图一致
-router = APIRouter()
-
-
-# --- 通用分页响应模型 ---
-# (这个模型在您的原始文件中存在，予以保留)
-DataType = TypeVar('DataType')
-class PaginatedResponse(BaseModel, Generic[DataType]):
-    total_count: int
-    page: int
-    page_size: int
-    total_pages: int
-    items: List[DataType]
-
-
-# ==============================================================================
-# --- Chapters (章节) API Endpoints ---
-# ==============================================================================
-
-@router.post(
-    "/novels/{novel_id}/chapters",
-    response_model=schemas.Chapter, # 响应模型使用 schema 以便控制返回字段
-    status_code=status.HTTP_201_CREATED,
-    summary="为指定小说创建新章节",
-    tags=["Chapters - 章节管理"]
+router = APIRouter(
+    prefix="/api/v1/chapters",
+    tags=["Chapters - 章节管理"],
 )
-async def create_chapter_for_novel(
-    novel_id: int,
-    chapter: schemas.ChapterCreate,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    为 ID 为 `novel_id` 的小说创建一个新的章节。
-    """
-    # 在创建之前，先确认小说是否存在
-    db_novel = await crud.get_novel(db, novel_id=novel_id)
-    if not db_novel:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {novel_id} 的小说未找到。")
-    
-    # 确保将 novel_id 关联到创建的数据上
-    if chapter.novel_id is None:
-        chapter.novel_id = novel_id
-    elif chapter.novel_id != novel_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="请求体中的 novel_id 与路径参数中的 novel_id 不匹配。")
-        
-    db_chapter = await crud.create_chapter(db=db, chapter_create=chapter)
-    return db_chapter
-
-
-@router.get("/", response_model=schemas.PaginatedResponse[schemas.ChapterRead], summary="获取指定小说的所有章节（分页）")
-async def read_chapters(
-    novel_id: int,
-    db: AsyncSession = Depends(get_db),
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量")
-):
-    skip = (page - 1) * page_size
-    items_list, total_count = await crud.get_chapters_by_novel_and_count(
-        db, novel_id=novel_id, skip=skip, limit=page_size
-    )
-    total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 0
-    
-    return schemas.PaginatedResponse(
-        total_count=total_count,
-        page=page,
-        page_size=page_size,
-        total_pages=total_pages,
-        items=items_list
-    )
 
 
 @router.get(
-    "/chapters/{chapter_id}",
-    response_model=schemas.Chapter,
-    summary="获取单个章节的详细信息",
-    tags=["Chapters - 章节管理"]
+    "/novel/{novel_id}",
+    response_model=List[schemas.Chapter],
+    summary="获取指定小说的所有章节"
 )
-async def read_chapter(
-    chapter_id: int,
+async def read_chapters_for_novel(
+    novel_id: int = Path(..., description="所属小说的ID"),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    通过章节自身的 ID 获取其详细信息。
+    获取指定ID小说下的所有章节列表。
     """
-    db_chapter = await crud.get_chapter(db, chapter_id=chapter_id)
+    chapters = await crud.get_chapters_by_novel_id(db, novel_id=novel_id)
+    if not chapters:
+        logger.info(f"小说 ID {novel_id} 没有找到任何章节。")
+    return chapters
+
+
+@router.get(
+    "/{chapter_id}",
+    response_model=schemas.Chapter,
+    summary="获取单个章节的详细信息"
+)
+async def read_chapter(
+    chapter_id: int = Path(..., description="要检索的章节ID"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    根据ID获取单个章节的详细信息，包括分析数据。
+    """
+    db_chapter = await crud.get_chapter_with_analysis(db, chapter_id=chapter_id)
     if db_chapter is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {chapter_id} 的章节未找到。")
     return db_chapter
 
 
-@router.put(
-    "/chapters/{chapter_id}",
+@router.post(
+    "/",
     response_model=schemas.Chapter,
-    summary="更新单个章节",
-    tags=["Chapters - 章节管理"]
+    status_code=status.HTTP_201_CREATED,
+    summary="创建新章节"
+)
+async def create_chapter(
+    chapter: schemas.ChapterCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    为指定的小说创建一篇新的章节。
+    """
+    db_novel = await crud.get_novel(db, novel_id=chapter.novel_id)
+    if not db_novel:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {chapter.novel_id} 的小说未找到，无法创建章节。")
+    
+    return await crud.create_chapter(db=db, chapter=chapter)
+
+
+@router.put(
+    "/{chapter_id}",
+    response_model=schemas.Chapter,
+    summary="更新章节信息"
 )
 async def update_chapter(
     chapter_id: int,
@@ -123,128 +87,173 @@ async def update_chapter(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    更新 ID 为 `chapter_id` 的章节的内容或元数据。
+    更新一篇已存在的章节的内容或标题等信息。
     """
-    updated_chapter = await crud.update_chapter(db, chapter_id=chapter_id, chapter_update=chapter)
-    if updated_chapter is None:
+    db_chapter = await crud.update_chapter(db, chapter_id=chapter_id, chapter_update=chapter)
+    if db_chapter is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {chapter_id} 的章节未找到。")
-    return updated_chapter
+    return db_chapter
+
+
+@router.post(
+    "/reorder",
+    status_code=status.HTTP_200_OK,
+    summary="更新多个章节的顺序"
+)
+async def update_chapters_order(
+    orders: List[schemas.ChapterOrderUpdate],
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    批量更新章节的 `order` 字段。
+    此操作在单个事务中完成，确保原子性。
+    """
+    if not orders:
+        return {"message": "No chapter orders to update."}
+
+    try:
+        # --- 【修改】添加事务控制 ---
+        async with db.begin():
+            for order_update in orders:
+                # 在循环中，我们逐个更新。crud.update_chapter_order 应被设计为仅更新 order 字段。
+                # 如果 crud 函数不存在，可以直接更新模型字段。
+                # 假设 crud.update_chapter_order 存在且是异步的
+                updated_chapter = await crud.update_chapter_order(
+                    db, chapter_id=order_update.id, order=order_update.order
+                )
+                if not updated_chapter:
+                    # 如果任一章节未找到，事务将自动回滚
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"ID为 {order_update.id} 的章节未找到。"
+                    )
+        # --- 事务结束，成功则提交，失败则回滚 ---
+        
+        return {"message": "章节顺序已成功更新。"}
+    except HTTPException as http_exc:
+        # 重新抛出 HTTP 异常，以便 FastAPI 处理
+        raise http_exc
+    except Exception as e:
+        logger.error(f"批量更新章节顺序时出错: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="更新章节顺序时发生内部错误。")
 
 
 @router.delete(
-    "/chapters/{chapter_id}",
+    "/{chapter_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="删除单个章节",
-    tags=["Chapters - 章节管理"]
+    summary="删除一个章节"
 )
 async def delete_chapter(
     chapter_id: int,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    从数据库中永久删除一个章节。
+    从数据库中永久删除一篇章节。
     """
     success = await crud.delete_chapter(db, chapter_id=chapter_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {chapter_id} 的章节未找到。")
-    # 204 No Content, so no response body
-    return
-
-
-# 你的原始文件中没有章节排序的CRUD函数，但保留了API端点，这是一个很好的示例
-# 我将假设 crud 中存在一个 update_chapters_order 函数，并将其异步化
-# 如果不存在，你需要按照 `crud.py` 的风格添加它。
-async def update_chapters_order(db: AsyncSession, *, novel_id: int, ordered_ids: List[int]) -> bool:
-    """
-    (这是一个假设的异步crud函数，用于更新章节顺序)
-    """
-    try:
-        chapters = await crud.get_chapters_by_novel(db, novel_id=novel_id)
-        chapter_map = {chap.id: chap for chap in chapters}
-        
-        if set(chapter_map.keys()) != set(ordered_ids):
-             logger.error("提供的章节ID列表与数据库中的不匹配。")
-             return False
-
-        for i, chapter_id in enumerate(ordered_ids):
-            if chapter_id in chapter_map:
-                chapter_map[chapter_id].order = i
-        
-        await db.commit()
-        return True
-    except Exception:
-        await db.rollback()
-        return False
+    return None
 
 
 @router.post(
-    "/novels/{novel_id}/chapters/reorder",
-    response_model=schemas.MessageResponse,
-    summary="更新指定小说下所有章节的顺序",
-    tags=["Chapters - 章节管理"]
+    "/{chapter_id}/process",
+    response_model=schemas.RuleChainExecutionResult,
+    summary="使用规则链处理章节内容"
 )
-async def reorder_chapters(
-    novel_id: int,
-    reorder_request: schemas.ReorderRequest,
+async def process_chapter_with_rule_chain(
+    chapter_id: int,
+    chain_id: int = Body(..., embed=True, description="要使用的规则链ID"),
     db: AsyncSession = Depends(get_db),
+    llm_orchestrator: LLMOrchestrator = Depends(get_llm_orchestrator)
 ):
     """
-    根据提供的章节ID列表，重新排序小说下的所有章节。
+    获取章节内容，并使用指定的规则链进行处理，返回处理结果。
     """
-    # 检查小说是否存在
-    db_novel = await crud.get_novel(db, novel_id=novel_id)
-    if not db_novel:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {novel_id} 的小说未找到。")
+    chapter = await crud.get_chapter(db, chapter_id)
+    if not chapter or not chapter.content:
+        raise HTTPException(status_code=404, detail=f"ID为 {chapter_id} 的章节未找到或内容为空。")
 
-    success = await update_chapters_order(
-        db, 
-        novel_id=novel_id, 
-        ordered_ids=reorder_request.ordered_ids,
+    result = await rule_application_service.run_chain_on_text(
+        db=db,
+        llm_orchestrator=llm_orchestrator,
+        chain_id=chain_id,
+        input_text=chapter.content,
+        novel_id=chapter.novel_id
     )
-    if not success:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="更新章节顺序时发生错误。")
-    return schemas.MessageResponse(message="章节顺序更新成功。")
+    return result
 
 
 @router.post(
-    "/chapters/{chapter_id}/trigger-analysis",
-    response_model=schemas.MessageResponse,
-    status_code=status.HTTP_202_ACCEPTED,
-    summary="触发对单个章节的分析",
-    tags=["Chapters - 章节管理"]
+    "/{chapter_id}/enhance",
+    response_model=schemas.Chapter,
+    summary="使用规则链处理并更新章节内容"
 )
-async def trigger_chapter_analysis_endpoint(
-    chapter_id: int = Path(..., description="要分析的章节ID"),
-    background_tasks: BackgroundTasks = Depends(),
-    llm_orchestrator: LLMOrchestrator = Depends(get_llm_orchestrator),
+async def enhance_chapter_content(
+    chapter_id: int,
+    request: schemas.ChapterEnhanceRequest,
+    db: AsyncSession = Depends(get_db),
+    llm_orchestrator: LLMOrchestrator = Depends(get_llm_orchestrator)
+):
+    """
+    使用规则链处理章节内容，并将生成的新内容更新回章节。
+    """
+    chapter = await crud.get_chapter(db, chapter_id)
+    if not chapter or not chapter.content:
+        raise HTTPException(status_code=404, detail=f"ID为 {chapter_id} 的章节未找到或内容为空。")
+
+    result = await rule_application_service.run_chain_on_text(
+        db=db,
+        llm_orchestrator=llm_orchestrator,
+        chain_id=request.chain_id,
+        input_text=chapter.content,
+        novel_id=chapter.novel_id
+    )
+
+    if not result.success or not isinstance(result.final_output, str):
+        raise HTTPException(status_code=400, detail=f"规则链执行失败或未返回文本结果: {result.error_message}")
+
+    # 更新章节内容
+    chapter_update_schema = schemas.ChapterUpdate(content=result.final_output)
+    updated_chapter = await crud.update_chapter(db, chapter_id=chapter_id, chapter_update=chapter_update_schema)
+    if not updated_chapter:
+        # 这个理论上不应发生，因为我们前面已经获取了章节
+        raise HTTPException(status_code=500, detail="更新章节内容时发生未知错误。")
+
+    return updated_chapter
+
+
+@router.post(
+    "/{chapter_id}/vector-search",
+    response_model=List[schemas.SimilaritySearchResult],
+    summary="在章节的上下文中进行向量相似度搜索"
+)
+async def search_in_chapter_context(
+    chapter_id: int,
+    search_query: str = Body(..., embed=True, description="要搜索的文本查询"),
+    limit: int = Body(5, embed=True, ge=1, le=100, description="返回结果的最大数量"),
+    vector_store_service: VectorStoreService = Depends(get_vector_store_service),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    为指定章节启动一个后台分析任务。
-    此任务将使用LLM分析章节的情感、提取事件和角色表现等。
+    在一个章节的向量化上下文中执行相似度搜索。
+    这需要该章节所属的小说已经被成功向量化。
     """
-    db_chapter = await crud.get_chapter(db, chapter_id)
-    if not db_chapter:
+    chapter = await crud.get_chapter(db, chapter_id)
+    if not chapter:
         raise HTTPException(status_code=404, detail=f"ID为 {chapter_id} 的章节未找到。")
 
     try:
-        # 假设 background_analysis_service.run_chapter_analysis 也是异步的
-        # 创建一个包装函数以便在后台运行
-        def chapter_analysis_task():
-            import asyncio
-            async def async_task():
-                async with AsyncSessionLocal() as task_db:
-                    await background_analysis_service.run_chapter_analysis(
-                        db=task_db,
-                        chapter_id=chapter_id,
-                        llm_orchestrator=llm_orchestrator
-                    )
-            asyncio.run(async_task())
-
-        background_tasks.add_task(chapter_analysis_task)
-        logger.info(f"已为章节 ID {chapter_id} 添加后台分析任务。")
-        return schemas.MessageResponse(message="章节分析任务已成功添加到后台执行队列。")
+        search_results = await vector_store_service.similarity_search(
+            novel_id=chapter.novel_id,
+            query=search_query,
+            k=limit,
+            filter_metadata={"chapter_id": chapter.id} # 仅在该章节的块中搜索
+        )
+        return search_results
+    except ValueError as e:
+        # 通常由 novel_id 未向量化或集合不存在引起
+        raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
-        logger.error(f"为章节 {chapter_id} 添加分析任务时失败: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="添加章节分析任务失败。")
-
+        logger.error(f"在章节 {chapter_id} 中进行向量搜索时出错: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="向量搜索时发生内部错误。")

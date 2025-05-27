@@ -26,24 +26,16 @@ router = APIRouter(
 )
 
 
-# --- 响应模型 ---
+# --- 响应模型 (无变化) ---
 class PaginatedNovels(BaseModel):
     total: int
     novels: List[schemas.Novel]
 
 
-# --- 后台任务辅助函数 ---
-# 注意：理想情况下，后台任务也应是异步的。
-# 这里的同步实现是为了最小化改动，但它会在一个单独的线程/进程中运行，
-# 需要自己创建数据库会话。由于我们的 SessionLocal 已改为异步，
-# 这里需要一种方式来同步地运行异步代码，或者创建一个同步的 SessionLocal。
-# 为了简化，我们暂时保留同步创建会话的逻辑，但这在实际生产中需要谨慎处理。
+# --- 后台任务辅助函数 (无变化) ---
 def run_full_analysis_in_background(novel_id: int, llm_orchestrator_instance: LLMOrchestrator):
     """
     在后台运行完整的分析流程。
-    警告：此函数在一个同步的上下文中运行，但需要与异步数据库交互。
-    这是一个复杂点，理想的解决方案是使用如 `anyio` 或 `asyncio.run`
-    来执行异步的后台服务，或者使用像 Celery/ARQ 这样的专用任务队列。
     """
     import asyncio
 
@@ -59,7 +51,6 @@ def run_full_analysis_in_background(novel_id: int, llm_orchestrator_instance: LL
                 logger.info(f"后台任务成功完成：小说 {novel_id} 的完整分析。")
             except Exception as e:
                 logger.error(f"后台任务失败：小说 {novel_id} 的分析过程中发生错误。错误: {e}", exc_info=True)
-                # 可以在此处更新数据库，标记任务失败
                 try:
                     novel_to_update = await crud.get_novel(db, novel_id)
                     if novel_to_update:
@@ -69,7 +60,6 @@ def run_full_analysis_in_background(novel_id: int, llm_orchestrator_instance: LL
                 except Exception as db_update_error:
                      logger.error(f"更新小说 {novel_id} 失败状态时再次发生错误: {db_update_error}", exc_info=True)
 
-    # 在同步函数中运行异步任务
     asyncio.run(analysis_task())
 
 
@@ -96,28 +86,35 @@ async def create_novel_and_process_file(
     - **触发后台分析**: 将完整的小说分析任务添加到后台执行。
     """
     try:
-        novel_create_schema = schemas.NovelCreate(
-            title=title,
-            author=author,
-            description=description,
-            # 初始状态
-            analysis_status=schemas.AnalysisStatus.PENDING,
-            vectorization_status=schemas.VectorizationStatus.PENDING
-        )
-        # 创建小说条目
-        db_novel = await crud.create_novel(db, novel_create=novel_create_schema)
+        # --- 【修改】开始事务控制 ---
+        async with db.begin():
+            novel_create_schema = schemas.NovelCreate(
+                title=title,
+                author=author,
+                description=description,
+                # 初始状态
+                analysis_status=schemas.AnalysisStatus.PENDING,
+                vectorization_status=schemas.VectorizationStatus.PENDING
+            )
+            # 1. 创建小说条目
+            db_novel = await crud.create_novel(db, novel_create=novel_create_schema)
 
-        # 读取并处理文件内容
-        file_content = (await file.read()).decode('utf-8')
-        chapters_to_create = novel_parser_service.parse_novel_text(file_content)
+            # 读取并处理文件内容
+            file_content = (await file.read()).decode('utf-8')
+            chapters_to_create = novel_parser_service.parse_novel_text(file_content)
 
-        # 为章节设置 novel_id
-        for chap in chapters_to_create:
-            chap.novel_id = db_novel.id
+            # 为章节设置 novel_id
+            for chap in chapters_to_create:
+                chap.novel_id = db_novel.id
 
-        # 批量创建章节
-        if chapters_to_create:
-            await crud.bulk_create_chapters(db, chapters=chapters_to_create)
+            # 2. 批量创建章节 (在同一个事务中)
+            if chapters_to_create:
+                await crud.bulk_create_chapters(db, chapters=chapters_to_create)
+            
+            # 刷新 db_novel 对象以确保在事务提交后可以访问其数据
+            await db.refresh(db_novel)
+        # --- 【修改】事务控制结束 ---
+        # 只有在 async with db.begin() 块成功完成后，才会提交所有更改
 
         # 将分析任务添加到后台
         background_tasks.add_task(run_full_analysis_in_background, db_novel.id, llm_orchestrator)
@@ -126,6 +123,7 @@ async def create_novel_and_process_file(
         return db_novel
     except Exception as e:
         logger.error(f"上传和处理小说文件时出错: {e}", exc_info=True)
+        # 如果事务中发生错误，async with db.begin() 会自动回滚
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"处理小说文件失败: {str(e)}"
@@ -229,7 +227,7 @@ async def get_novel_analysis_status(
 @router.post(
     "/{novel_id}/vectorize",
     status_code=status.HTTP_202_ACCEPTED,
-    summary="触发指定小শনের后台向量化任务"
+    summary="触发指定小说的后台向量化任务"
 )
 async def trigger_novel_vectorization(
     novel_id: int = Path(..., description="要进行向量化的小说的ID"),
@@ -260,4 +258,3 @@ async def trigger_novel_vectorization(
     logger.info(f"已为小说 ID {novel_id} 添加后台向量化任务。")
     
     return {"message": "小说向量化任务已成功添加到后台执行队列。"}
-

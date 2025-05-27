@@ -1,239 +1,224 @@
+# backend/app/routers/rule_chains.py
 import logging
-from typing import List, Any, Dict, Optional
+from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Body, BackgroundTasks, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import crud, schemas
-from ..database import get_db, AsyncSessionLocal # <-- 新增导入
-from ..dependencies import get_llm_orchestrator
-from ..llm_orchestrator import LLMOrchestrator
-from ..services.rule_application_service import RuleApplicationService, ContentSafetyException
-from ..services.config_service import ConfigService # <-- 新增导入
+from .. import crud, schemas, models # 添加 models 导入
+from ..database import get_db
+from ..dependencies import get_llm_orchestrator # 添加 get_llm_orchestrator 依赖
+from ..llm_orchestrator import LLMOrchestrator # 添加 LLMOrchestrator 导入
+from ..services import rule_application_service # 添加 rule_application_service 导入
+
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/v1/rule-chains",
-    tags=["Rule Chains Management"]
+    tags=["Rule Chains - 规则链管理"],
 )
-
-# --- API Specific Request/Response Models ---
-
-class ExecuteRequest(BaseModel):
-    novel_id: int
-    rule_chain_id: int
-    source_text: str
-    user_provided_params: Dict[str, Any] = {}
-
-class DryRunRequest(BaseModel):
-    novel_id: int
-    source_text: str
-    user_provided_params: Dict[str, Any] = {}
-    rule_chain_id: Optional[int] = None
-    rule_chain_definition: Optional[schemas.RuleChainCreate] = None
-    
-    class Config:
-        model_config = {
-            "extra": "forbid"
-        }
-
-class DryRunResponse(BaseModel):
-    output_text: str
-    intermediate_steps: List[Dict[str, Any]]
-
-
-# =============================================================================
-# --- 独立的后台任务执行函数 ---
-# =============================================================================
-async def run_rule_chain_background(
-    novel_id: int,
-    chain_id: int,
-    source_text: str,
-    user_provided_params: dict
-):
-    """
-    这是一个完全独立的后台任务函数，它创建自己的依赖项。
-    """
-    log_prefix = f"[BackgroundTask ChainID:{chain_id}]"
-    logger.info(f"{log_prefix} 后台任务已启动。")
-    
-    db_session: AsyncSession = None
-    try:
-        # 1. 创建独立的数据库会话
-        async with AsyncSessionLocal() as db_session:
-            # 2. 创建独立的依赖 (LLMOrchestrator, Service)
-            # 注意: 这里假设ConfigService可以无参数实例化
-            config_service = ConfigService() 
-            llm_orchestrator = LLMOrchestrator(config_service=config_service)
-            rule_app_service = RuleApplicationService(db=db_session, llm_orchestrator=llm_orchestrator)
-            
-            logger.info(f"{log_prefix} 正在执行规则链应用服务...")
-            # 3. 执行核心业务逻辑
-            await rule_app_service.apply_rule_chain_to_text(
-                novel_id=novel_id,
-                chain_id=chain_id,
-                source_text=source_text,
-                user_provided_params=user_provided_params
-            )
-            logger.info(f"{log_prefix} 规则链应用服务执行完毕。")
-            
-    except Exception as e:
-        # 强烈建议在后台任务中捕获所有异常并进行日志记录
-        logger.error(f"{log_prefix} 后台任务执行失败: {e}", exc_info=True)
-    finally:
-        logger.info(f"{log_prefix} 后台任务已结束。")
-
-
-# =============================================================================
-# --- Rule Chains (规则链) CRUD Endpoints ---
-# =============================================================================
 
 @router.post(
     "/",
-    response_model=schemas.RuleChainRead,
+    response_model=schemas.RuleChainWithSteps,
     status_code=status.HTTP_201_CREATED,
-    summary="创建新的规则链"
+    summary="创建一个新的规则链"
 )
 async def create_rule_chain(
-    rule_chain: schemas.RuleChainCreate,
+    rule_chain_in: schemas.RuleChainCreate,
     db: AsyncSession = Depends(get_db)
 ):
-    return await crud.create_rule_chain(db=db, rule_chain=rule_chain)
+    """
+    创建一个新的规则链，可以同时包含其初始的规则步骤。
+    """
+    # 假设 crud.create_rule_chain 内部处理了事务或是一个原子操作
+    # 因为它需要创建链本身和其所有步骤
+    return await crud.create_rule_chain(db=db, chain_in=rule_chain_in)
+
+@router.get(
+    "/",
+    response_model=List[schemas.RuleChain],
+    summary="获取所有规则链的列表"
+)
+async def read_rule_chains(
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    检索所有规则链的列表（不包含详细步骤）。
+    """
+    return await crud.get_rule_chains(db=db, skip=skip, limit=limit)
 
 @router.get(
     "/{chain_id}",
-    response_model=schemas.RuleChainRead,
-    summary="根据ID获取规则链详情"
+    response_model=schemas.RuleChainWithSteps,
+    summary="获取单个规则链及其所有步骤"
 )
 async def read_rule_chain(
-    chain_id: int,
+    chain_id: int = Path(..., description="要检索的规则链ID"),
     db: AsyncSession = Depends(get_db)
 ):
-    db_chain = await crud.get_rule_chain(db=db, chain_id=chain_id)
-    if db_chain is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="规则链未找到。")
-    return db_chain
-
-# 修改后的代码片段
-@router.get(
-    "/novel/{novel_id}",
-    response_model=schemas.PaginatedResponse[schemas.RuleChainRead],
-    summary="获取指定小说的所有规则链（分页）"
-)
-async def read_rule_chains_for_novel(
-    novel_id: int,
-    db: AsyncSession = Depends(get_db),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1, le=100)
-):
-    skip = (page - 1) * page_size
-    items_list, total_count = await crud.get_rule_chains_by_novel_and_count(
-        db, novel_id=novel_id, skip=skip, limit=page_size
-    )
-    total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 0
-    
-    return schemas.PaginatedResponse(
-        total_count=total_count,
-        page=page,
-        page_size=page_size,
-        total_pages=total_pages,
-        items=items_list
-    )
+    """
+    通过ID获取单个规则链的详细信息，包括其包含的所有规则步骤，并按顺序排列。
+    """
+    db_rule_chain = await crud.get_rule_chain(db=db, chain_id=chain_id)
+    if db_rule_chain is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {chain_id} 的规则链未找到。")
+    return db_rule_chain
 
 @router.put(
     "/{chain_id}",
-    response_model=schemas.RuleChainRead,
-    summary="更新规则链"
+    response_model=schemas.RuleChainWithSteps,
+    summary="更新一个规则链"
 )
 async def update_rule_chain(
     chain_id: int,
-    rule_chain: schemas.RuleChainUpdate,
+    rule_chain_in: schemas.RuleChainUpdate,
     db: AsyncSession = Depends(get_db)
 ):
-    db_chain = await crud.get_rule_chain(db, chain_id=chain_id)
-    if not db_chain:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="规则链未找到。")
-    return await crud.update_rule_chain(db=db, chain_id=chain_id, rule_chain_update=rule_chain)
+    """
+    更新一个已存在的规则链。
+    - 可以更新规则链的名称和描述。
+    - 可以通过 `steps` 字段完整替换其所有的规则步骤。
+    此操作在单个事务中完成，以确保原子性。
+    """
+    # 您的代码中此处已有事务控制，是正确的
+    try:
+        async with db.begin():
+            updated_chain = await crud.update_rule_chain(db=db, chain_id=chain_id, chain_in=rule_chain_in)
+            if updated_chain is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {chain_id} 的规则链未找到。")
+            
+            await db.refresh(updated_chain, attribute_names=['steps'])
+        
+        return updated_chain
+        
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logger.error(f"更新规则链 {chain_id} 时出错: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="更新规则链时发生内部错误。")
+
 
 @router.delete(
     "/{chain_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="删除规则链"
+    summary="删除一个规则链"
 )
 async def delete_rule_chain(
     chain_id: int,
     db: AsyncSession = Depends(get_db)
 ):
-    db_chain = await crud.delete_rule_chain(db=db, chain_id=chain_id)
-    if db_chain is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="规则链未找到。")
+    """
+    永久删除一个规则链及其所有关联的规则步骤。
+    """
+    success = await crud.delete_rule_chain(db, chain_id=chain_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {chain_id} 的规则链未找到。")
     return None
 
-# =============================================================================
-# --- Rule Chain Execution Endpoints ---
-# =============================================================================
-
 @router.post(
-    "/execute",
-    status_code=status.HTTP_202_ACCEPTED,
-    summary="执行规则链（后台任务）"
+    "/{chain_id}/copy",
+    response_model=schemas.RuleChainWithSteps,
+    status_code=status.HTTP_201_CREATED,
+    summary="复制一个现有的规则链"
 )
-async def execute_rule_chain(
-    request: ExecuteRequest,
-    background_tasks: BackgroundTasks
-    # 注意：这里不再需要 db 和 llm_orchestrator 依赖
+async def copy_rule_chain(
+    chain_id: int,
+    new_name: str = Body(..., embed=True, description="新规则链的名称"),
+    db: AsyncSession = Depends(get_db)
 ):
     """
-    以后台任务的形式执行一个规则链。
-    此端点会立即返回，并在后台启动一个独立的、拥有自己数据库会话的任务。
+    创建一个现有规则链的完整副本，包括其所有步骤。
+    此操作在单个事务中完成，以确保原子性。
     """
-    background_tasks.add_task(
-        run_rule_chain_background, # <-- 调用我们新的独立任务函数
-        novel_id=request.novel_id,
-        chain_id=request.rule_chain_id,
-        source_text=request.source_text,
-        user_provided_params=request.user_provided_params
-    )
-    
-    return {"message": "规则链执行任务已加入后台处理队列。"}
-
+    # --- 【修改】添加事务控制 ---
+    try:
+        async with db.begin():
+            copied_chain = await crud.copy_rule_chain(db=db, source_chain_id=chain_id, new_name=new_name)
+            if copied_chain is None: # crud.copy_rule_chain 在源链不存在时可能返回None
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {chain_id} 的源规则链未找到，无法复制。")
+            
+            await db.refresh(copied_chain, attribute_names=['steps'])
+        
+        return copied_chain
+    except HTTPException as http_exc:
+        # 重新抛出由 crud.copy_rule_chain 内部或此函数直接抛出的HTTPException
+        raise http_exc
+    except Exception as e:
+        logger.error(f"复制规则链 {chain_id} 时出错: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="复制规则链时发生内部错误。")
 
 @router.post(
-    "/dry-run",
-    response_model=DryRunResponse,
-    summary="试运行规则链"
+    "/{chain_id}/test",
+    response_model=schemas.RuleChainExecutionResult,
+    summary="测试执行规则链（试运行）"
 )
-async def dry_run_rule_chain(
-    request: DryRunRequest = Body(...),
+async def test_rule_chain(
+    chain_id: int,
+    request: schemas.RuleChainTestRequest,
     db: AsyncSession = Depends(get_db),
     llm_orchestrator: LLMOrchestrator = Depends(get_llm_orchestrator)
 ):
     """
-    试运行一个规则链并立即返回结果，不会保存任何数据。
-    可以提供一个已保存的规则链ID，或者在请求体中提供一个临时的规则链定义。
+    对指定的规则链进行试运行。
+    使用提供的输入文本和动态参数（如果适用）来执行链中的每个步骤，并返回最终结果和中间步骤的输出。
+    此操作不会修改任何数据库状态。
     """
-    if not request.rule_chain_id and not request.rule_chain_definition:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="必须提供 'rule_chain_id' 或 'rule_chain_definition'。")
-    if request.rule_chain_id and request.rule_chain_definition:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="不能同时提供 'rule_chain_id' 和 'rule_chain_definition'。")
-
-    rule_app_service = RuleApplicationService(db=db, llm_orchestrator=llm_orchestrator)
-    
     try:
-        dry_run_result = await rule_app_service.dry_run_rule_chain(
-            novel_id=request.novel_id,
-            chain_id=request.rule_chain_id,
-            chain_definition=request.rule_chain_definition,
-            source_text=request.source_text,
-            user_provided_params=request.user_provided_params
+        result = await rule_application_service.run_chain_on_text(
+            db=db,
+            llm_orchestrator=llm_orchestrator,
+            chain_id=chain_id,
+            input_text=request.input_text,
+            novel_id=request.novel_id, # 可选，用于上下文
+            dynamic_params_override=request.dynamic_params_override
         )
-        return dry_run_result
-    except ValueError as ve:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
-    except ContentSafetyException as cse:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(cse))
+        return result
+    except ValueError as ve: # 例如规则链不存在或参数错误
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception as e:
-        logger.error(f"规则链试运行失败: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="规则链试运行时发生未知错误。")
+        logger.error(f"测试规则链 {chain_id} 时出错: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"测试规则链时发生内部错误: {str(e)}")
+
+
+@router.post(
+    "/{chain_id}/apply-to-chapter",
+    response_model=schemas.Chapter, # 返回更新后的章节对象
+    summary="将规则链应用于章节并更新其内容"
+)
+async def apply_rule_chain_to_chapter(
+    chain_id: int,
+    request: schemas.ApplyChainToChapterRequest,
+    db: AsyncSession = Depends(get_db),
+    llm_orchestrator: LLMOrchestrator = Depends(get_llm_orchestrator)
+):
+    """
+    获取指定章节的当前内容，使用规则链处理，然后将处理后的内容更新回该章节。
+    此操作涉及数据库写入（更新章节内容），因此包含在事务中。
+    """
+    # --- 【修改】添加事务控制 ---
+    try:
+        async with db.begin():
+            updated_chapter = await rule_application_service.apply_chain_to_chapter_and_update(
+                db=db,
+                llm_orchestrator=llm_orchestrator,
+                chain_id=chain_id,
+                chapter_id=request.chapter_id,
+                novel_id=request.novel_id, # 可选，用于上下文
+                dynamic_params_override=request.dynamic_params_override
+            )
+            if updated_chapter is None: # 如果服务层在找不到章节等情况下返回 None
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ID为 {request.chapter_id} 的章节未找到或规则链 {chain_id} 应用失败。")
+        
+        return updated_chapter
+    except HTTPException as http_exc:
+        # 重新抛出由服务层或此函数直接抛出的HTTPException
+        raise http_exc
+    except ValueError as ve: # 例如规则链不存在或参数错误
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        logger.error(f"将规则链 {chain_id} 应用于章节 {request.chapter_id} 时出错: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="应用规则链到章节时发生内部错误。")
