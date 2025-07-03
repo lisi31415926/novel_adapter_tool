@@ -129,23 +129,66 @@ export function getMicroAppByPath(path) {
 
 ## 4. 依赖与导入指南
 
+为保证项目结构清晰、代码可维护性高，我们制定了统一的依赖与模块导入规范。
+
+### 4.1. TypeScript 路径别名核心配置 (`tsconfig.base.json`)
+
+整个 `frontend-react` 工作区的 TypeScript 路径别名（Path Alias）由位于 `packages/tsconfig.base.json` 的文件统一管理。这个文件是路径解析的"真理之源"，确保了所有微应用和共享包都遵循相同的解析规则。
+
+**核心配置如下:**
+
+```json
+// File: frontend-react/packages/tsconfig.base.json
+{
+  "compilerOptions": {
+    // ...
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"],
+      "@api-client/*": ["api-client/src/*"],
+      "@components/*": ["ui-components/src/*"]
+    }
+    // ...
+  }
+}
+```
+
+**别名解析:**
+
+- `@/*`: 在**各自的应用或包内部**，`@/` 会被解析为其 `src` 目录。例如，在 `apps/shell` 中，`@/components/Layout` 会指向 `apps/shell/src/components/Layout`。
+- `@api-client/*`: 提供了对 `api-client` 包内部模块的直接访问。例如 `import { apiClient } from '@api-client/core';`。
+- `@components/*`: 提供了对 `ui-components` 包内部模块的直接访问。例如 `import { Button } from '@components/forms';`。
+
+所有微应用和包的 `tsconfig.json` 文件都应**继承**这个基础配置，以确保路径别名全局生效。
+
+```json
+// Example: apps/shell/tsconfig.json
+{
+  "extends": "../../packages/tsconfig.base.json",
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+```
+
+### 4.2. 导入场景示例
+
 **场景1：在微应用中使用共享UI组件**
 
 - **目标**: 在 `chapter-editor` 中使用一个通用按钮。
-- **代码**: `import { Button } from '@novel-adapter-tool/ui-components/forms';` (具体路径需在`ui-components`的`index.ts`中确认)
-- **原理**: `pnpm` 工作区（Workspaces）会自动链接 `packages/ui-components` 到 `node_modules`，使其可以被直接导入。
+- **代码**: `import { Button } from '@components/forms/Button';` (具体路径取决于 `ui-components` 的导出结构)
+- **原理**: `pnpm` 工作区（Workspaces）将 `packages/ui-components` 链接到 `node_modules`，同时 `tsconfig.base.json` 中的 `@components/*` 别名提供了类型提示和编译时路径解析。
 
 **场景2：在微应用中使用全局状态**
 
 - **目标**: 在 `character-manager` 中获取通知功能。
 - **代码**: `import { useUI } from '@novel-adapter-tool/state-manager'; const { addNotification } = useUI();`
-- **原理**: 同上，通过`pnpm`工作区链接。`state-manager`内部的hooks通过`shell`应用经由模块联邦共享给所有微应用。
+- **原理**: 通过`pnpm`工作区链接。`state-manager`内部的hooks通过`shell`应用经由模块联邦共享给所有微应用。
 
 **场景3：应用内部的文件导入**
 
-- **目标**: 在`shell`应用中从`components`目录导入`HomePage`。
+- **目标**: 在`shell`应用中从`pages`目录导入`HomePage`。
 - **代码**: `import HomePage from '@/pages/HomePage';`
-- **原理**: 每个微应用的 `vite.config.ts` 和 `tsconfig.json` 中配置了路径别名（`alias: { '@': '...' }`），将 `@` 指向 `src` 目录，简化了内部导入。
+- **原理**: 每个微应用的 `tsconfig.json` 继承了 `tsconfig.base.json`，其中的 `@/*` 别名将 `@` 指向了当前应用的 `src` 目录，从而简化内部导入。
 
 **场景4：跨应用页面跳转（路由）**
 
