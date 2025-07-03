@@ -195,3 +195,143 @@ export function getMicroAppByPath(path) {
 - **目标**: 从小说的列表页（`novelManager`）跳转到章节编辑页（`chapterEditor`）。
 - **代码**: `import { Link } from 'react-router-dom'; <Link to="/novels/editor/some-id">Edit Chapter</Link>`
 - **原理**: 开发者无需关心模块联邦的动态导入。`shell` 应用作为路由中枢，会根据 `micro-frontends.config.js` 中的 `pathMapping`，在URL改变时自动加载并显示对应的微应用。
+
+---
+
+## 5. UI 设计系统与开发规范
+
+本章节旨在提供UI/UX设计的一致性原则和标准化的开发工作流程，确保所有开发者遵循相同的规范，提升开发效率和最终产品质量。
+
+### 5.1. UI 设计理念 (`@components/*`)
+
+`packages/ui-components` 不仅仅是一个组件库，它是整个前端应用的 **设计系统**，是确保视觉和交互一致性的基石。
+
+- **单一视觉真实源 (Single Source of Visual Truth)**: 所有通用UI元素（按钮、表单、弹窗、布局等）都必须源自 `ui-components` 包。严禁在微应用中创建与通用组件功能重复的"一次性"组件。
+
+- **主题化与样式**:
+  - 项目的所有基础样式变量（如主色、辅助色、字体、间距单位）统一定义在 `packages/ui-components/src/styles/theme.css` 中。
+  - 所有组件的样式必须优先使用这些预定义的CSS变量，以保证全局主题的统一性，方便未来进行一键换肤。
+
+- **组件开发指南**:
+  - **组合优于继承**: 优先通过组合基础组件来构建更复杂的复合组件。
+  - **可访问性 (A11y)**: 开发新组件时，必须考虑可访问性，正确使用ARIA属性和语义化HTML标签。
+  - **接口定义**: 组件的`props`必须拥有清晰、完整的TypeScript类型定义，并提供必要的注释。
+
+- **如何使用共享组件**:
+  - 始终通过 `@components/*` 别名导入。
+  - **示例**: `import { Button, TextInput } from '@components/forms';`
+
+### 5.2. 核心开发工作流程
+
+为保证架构的完整性和一致性，所有开发者必须遵循以下标准化流程。
+
+#### A. 如何添加一个新的微应用 (以 `newManager` 为例)
+
+1.  **创建目录**: 在 `apps/` 目录下创建新应用的文件夹 `newManager`。
+2.  **注册应用**: 打开 `frontend-react/micro-frontends.config.js`，在 `microApps` 对象中添加 `newManager` 的配置。明确其 `name`, `exposes` 和 `remotes`。
+3.  **定义路由**: 在同一个配置文件的 `getMicroAppByPath` 函数内部，向 `pathMapping` 对象添加新的路由映射，例如 `'/new-manager': 'newManager'`。
+4.  **更新配置**: 在 `frontend-react` 目录下执行 `pnpm install` 和 `pnpm run update-vite-configs` (假设脚本名称为此，请根据 `package.json` 确认)。此脚本将根据中央配置自动生成或更新微应用的 `vite.config.ts`。
+5.  **开发实现**: 在 `apps/newManager/src` 中开发你的应用组件，并确保主入口组件已在 `exposes` 中正确暴露。
+
+#### B. 如何向 `ui-components` 贡献一个新组件
+
+1.  **创建文件**: 在 `packages/ui-components/src/` 合适的分类目录下（如 `forms`, `data-display`）创建组件文件。
+2.  **编写组件**: 编写组件代码，并使用 `theme.css` 中的CSS变量进行样式设置。
+3.  **导出组件**: 从分类目录的 `index.ts` 和 `packages/ui-components/src/index.ts` 中导出新组件，使其可以被外部引用。
+4.  **编写文档 (强烈建议)**: 在 `packages/ui-components/docs/` 目录下为新组件添加说明文档和使用示例。
+
+#### C. 如何添加或修改一条路由
+
+1.  **定位路由表**: 打开 `frontend-react/micro-frontends.config.js`。
+2.  **修改映射**: 在文件底部的 `getMicroAppByPath` 函数中，找到 `pathMapping` 常量。
+3.  **更新路径**: 添加新的路径到应用的映射，或修改现有映射。例如，增加 `'/settings/profile': 'configManager'`。路由的变更会由 `shell` 应用自动处理。
+
+### 5.3. 架构最佳实践
+
+- **配置驱动开发**: **任何** 涉及应用边界、共享依赖或路由的变更，都**必须**首先修改 `micro-frontends.config.js`。这是所有操作的起点。
+- **严禁手动修改 `vite.config.ts`**: 重复强调，此文件是自动生成的，任何手动修改都会在下次脚本执行时被覆盖，并可能导致整个系统行为不一致。
+- **统一状态管理**: 优先使用 `@novel-adapter-tool/state-manager` 提供的Hooks (`useShell`, `useUI` 等)。避免在应用中直接引入 `valtio` 或 `zustand`，以保持状态管理策略的统一和可控。
+- **拥抱路径别名**: 在所有应用和包中，坚持使用 `@/*`, `@components/*`, `@api-client/*` 等路径别名进行导入，这能极大增强代码的可读性和可维护性。
+- **明确的依赖边界**: 微应用之间严禁直接相互导入模块。它们之间的通信应通过 `shell` 暴露的共享模块（如 `eventBus`）或全局状态来进行，或者通过路由进行解耦。
+
+---
+
+## 6. 自动化API层
+
+为了实现前后端的松耦合与高效协作，本项目采用**由API规范驱动的自动化架构**。前端的 `api-client` 并非手动编写，而是根据后端提供的 `OpenAPI` 规范自动生成，从根本上杜绝了接口不匹配、类型错误和繁琐的手动更新工作。
+
+### 6.1. 核心理念：API规范即代码
+
+- **真理之源**: 后端提供的 `openapi.json` (或等效的API规范文件) 是API的唯一“真理之源”。
+- **自动化生成**: `api-client` 包中的所有请求方法、数据类型和React Query Hooks均由脚本自动生成。
+- **类型安全**: 生成过程会创建完整的TypeScript类型，为所有API交互提供端到端的类型安全保障。
+
+### 6.2. 关键文件与工具
+
+- **API规范 (输入)**: 一个 `openapi.json` 文件，应由后端团队提供。
+- **生成脚本 (工具)**: `frontend-react/scripts/ai-assistant/api-client-generator.js`。这是读取API规范并生成代码的核心工具。
+- **生成代码 (输出)**: `frontend-react/packages/api-client/src/generated/`。所有自动生成的代码都位于此目录。**此目录下的任何文件都严禁手动修改**。
+- **运行时 (消费端)**: `@novel-adapter-tool/api-client` 包，供所有微应用消费。
+
+### 6.3. 开发工作流
+
+#### A. 何时需要重新生成API客户端？
+
+当后端API发生任何变更时（例如：新增/修改/删除接口、请求参数变更、返回数据结构变化），都**必须**重新生成API客户端。
+
+#### B. 如何重新生成？
+
+1.  **获取规范**: 从后端获取最新的 `openapi.json` 文件，并将其放置在 `frontend-react/api-spec/` 目录下。
+2.  **执行脚本**: 在 `frontend-react` 目录下，运行代码生成脚本。命令示例如下（具体参数请参考脚本内部实现）：
+    ```bash
+    node ./scripts/ai-assistant/api-client-generator.js \
+      --input ./api-spec/openapi.json \
+      --output ./packages/api-client/src/generated
+    ```
+3.  **验证变更**: 检查 `git diff`，确认 `packages/api-client/src/generated/` 目录下的代码已根据API变更自动更新。
+
+### 6.4. 如何在应用中使用API客户端
+
+生成器最大的便利是它与 `@tanstack/react-query` 的深度集成，为每个API端点都创建了对应的自定义Hook。
+
+- **命名约定**: Hook的命名通常与API操作直接相关，例如 `GET /novels/{id}` 对应 `useGetNovelById`，`POST /novels` 对应 `useCreateNovel`。
+
+- **使用示例**: 在组件中获取一篇小说的信息。
+
+  ```tsx
+  // File: apps/novel-manager/src/components/NovelDetails.tsx
+
+  import { useGetNovelById } from "@api-client/hooks"; // 假设Hook从这里导出
+  import { Spin, Alert } from "@components/feedback";
+
+  function NovelDetails({ novelId }: { novelId: string }) {
+    const {
+      data: novel,
+      isLoading,
+      isError,
+      error,
+    } = useGetNovelById(novelId, {
+      // React Query options, e.g., enabling/disabling the query
+      enabled: !!novelId,
+    });
+
+    if (isLoading) {
+      return <Spin tip="正在加载小说详情..." />;
+    }
+
+    if (isError) {
+      return <Alert type="error" message={`加载失败: ${error.message}`} />;
+    }
+
+    return (
+      <div>
+        <h1>{novel?.title}</h1>
+        <p>{novel?.summary}</p>
+      </div>
+    );
+  }
+  ```
+
+- **请求配置与错误处理**:
+  - 通用的请求配置（如 `baseURL`、`timeout`、`headers` 中认证Token的附加）集中在 `packages/api-client/src/core/axios-instance.ts` 中完成。
+  - 全局的错误处理逻辑（如处理401未授权、500服务器错误）则封装在 `packages/api-client/src/core/error-handler.ts` 中，对业务代码透明。
